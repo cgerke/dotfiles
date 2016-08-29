@@ -1,0 +1,80 @@
+[user]
+	email = chris.gerke@gmail.com
+	name = Chris Gerke
+
+[alias]
+
+	a = add
+	b = branch -a
+	c = commit
+	co = checkout
+
+	# commit all
+	ca = !git add -A && git commit -av
+
+	# contributors
+	conts = shortlog --summary --numbered
+
+	# credit an author on the latest commit
+	credit = "!f() { git commit --amend --author \"$1 <$2>\" -C HEAD; }; f"
+
+	# current state difference
+	current = diff --patch-with-stat
+
+	d = diff
+
+	# diff summary
+	ds = diff --word-diff
+
+	# diff given a revision
+	dr = "!f() { git diff "$1"^.."$1"; }; f"
+
+	# find a file
+	f = "!git ls-files | grep -i"
+
+	# find a string
+	fs = grep -Ii
+
+	# file history
+	fh = log -u
+
+	gbdd = !git push origin --delete $1
+
+	# alias help
+	h = "!git config -l | grep alias | cut -c 7-"
+
+	# remote repo info
+	info = git remote show origin
+
+	# last commit difference
+	last = diff --cached HEAD^
+
+	# log
+	l = log --pretty=oneline --graph --abbrev-commit --decorate --numstat
+
+	# last commit
+	lc = diff --cached HEAD^
+
+	# log summary
+	ls = log --pretty=oneline --graph --abbrev-commit
+
+	p = push
+
+	# Push branch
+	pb = push -u origin
+
+	# redo commit (but remember to "git add first")
+	redo = commit --amend
+
+	remotes = remote -v
+
+	s = status
+
+	# fetch and merge
+	sync = !git fetch origin && git merge origin/master
+
+	## git remote add upstream https://github.com/facebook/IT-CPE
+	sync-fork = !git checkout master && git fetch upstream && git pull upstream master
+
+[core]
+	excludesfile = ~/.gitignore_global

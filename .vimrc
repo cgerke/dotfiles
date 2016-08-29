@@ -1,0 +1,13 @@
+syntax enable
+colo lucario
+set expandtab
+set autoindent
+set copyindent
+set hlsearch
+set incsearch
+set number
+set shiftwidth=2
+set softtabstop=2
+set tabstop=2
+set nobackup
+set noswapfile

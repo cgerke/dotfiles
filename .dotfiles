@@ -1,0 +1,68 @@
+#!/bin/bash
+# https://github.com/cgerke/dotfiles
+
+sudo -v
+
+date_string=$(/bin/date +"%Y%m%d%H%M%S")
+
+#cd ~; /usr/bin/curl -#L https://github.com/cgerke/dotfiles/tarball/master | /usr/bin/tar -xzv --strip-components 1 --exclude={README.md,Makefile,.pkgroot,.scripts}; exit
+
+if [ -d /opt/dotfiles ]; then
+	pushd /opt/dotfiles
+	sudo git fetch --all
+	sudo git reset --hard origin/master
+else
+	sudo git clone https://github.com/cgerke/dotfiles /opt/dotfiles
+fi
+
+sudo chmod -R 775 /opt/dotfiles
+sudo chown -R root:admin /opt/dotfiles
+
+cd
+for d in ".aliases" ".atom" ".bash_profile" ".bash_prompt" ".chef" ".dotfiles" ".exports" ".functions" ".gitconfig" ".gitignore_global" ".vimrc"
+do
+	readlink ~/${d} | grep /opt/dotfiles/${d}
+	if [ $? != 0 ]; then
+		echo "Linking ~/${d} to /opt/dotfiles/${d}"
+		[[ -e ~/${d} ]] && mv -f ~/${d} ~/${d}.backup
+		/bin/ln -s /opt/dotfiles/${d} ~/${d}
+	fi
+done
+
+defaults read com.apple.Terminal | grep lucario
+if [ $? != 0 ]; then
+defaults write com.apple.Terminal "Default Window Settings" "lucario"
+defaults write com.apple.Terminal "Startup Window Settings" "lucario"
+osascript <<EOD
+tell application "Terminal"
+  local allOpenedWindows
+  local initialOpenedWindows
+  local windowID
+  set themeName to "lucario"
+  (* Store the IDs of all the open terminal windows. *)
+  set initialOpenedWindows to id of every window
+  (* Open the custom theme so that it gets added to the list
+     of available terminal themes (note: this will open two
+     additional terminal windows). *)
+  do shell script "open '/opt/dotfiles/" & themeName & ".terminal'"
+  (* Wait a little bit to ensure that the custom theme is added. *)
+  delay 1
+  (* Set the custom theme as the default terminal theme. *)
+  set default settings to settings set themeName
+  (* Get the IDs of all the currently opened terminal windows. *)
+  set allOpenedWindows to id of every window
+  repeat with windowID in allOpenedWindows
+    (* Close the additional windows that were opened in order
+       to add the custom theme to the list of terminal themes. *)
+    if initialOpenedWindows does not contain windowID then
+      close (every window whose id is windowID)
+    (* Change the theme for the initial opened terminal windows
+       to remove the need to close them in order for the custom
+       theme to be applied. *)
+    else
+      set current settings of tabs of (every window whose id is windowID) to settings set themeName
+    end if
+  end repeat
+end tell
+EOD
+fi

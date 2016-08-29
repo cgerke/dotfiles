@@ -1,0 +1,35 @@
+alias ..="cd .."
+alias ...="cd ../.."
+alias a="cat ~/.aliases | grep alias | cut -c 7-"
+alias c="cd ~/Google\ Drive/code"
+alias d="~/.dotfiles"
+alias g="git"
+alias h="history"
+alias o="open"
+
+alias chefl="sudo chef-client --log_level debug -z -j quickstart.json"
+
+alias dds="find . -type f -name '*.DS_Store' -ls -delete"
+
+alias fun="/usr/bin/fgrep -h "func" "~/.functions" | /usr/bin/fgrep -v fgrep | /usr/bin/sed -e 's/)//' | /usr/bin/sed -e 's/(//'| /usr/bin/sed -e 's/function //' | /usr/bin/sed -e 's/{//' | grep -v .functions | grep -v function_help"
+
+alias hide="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
+alias show="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
+
+alias uenc='python -c "import sys, urllib as ul; print ul.quote_plus(sys.argv[1]);"'
+
+alias VBoxManage="/Applications/VirtualBox.app/Contents/MacOS/VBoxManage"
+alias clvg="create_linux_virtualbox_guest"
+alias lvg="clone_linux_virtualbox_guest"
+
+# Colour
+if ls --color > /dev/null 2>&1; then # GNU `ls`
+	colorflag="--color"
+else # OS X `ls`
+	colorflag="-G"
+fi
+alias l="ls -la ${colorflag}"
+alias ls="command ls ${colorflag}"
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'

@@ -1,0 +1,9 @@
+"*":
+  core:
+    projectHome: "/Users/cgerke/Google Drive/code"
+  editor:
+    fontSize: 12
+  "exception-reporting":
+    userId: "30d789c8-a0ba-12a4-e7db-246782993000"
+  welcome:
+    showOnStartup: false

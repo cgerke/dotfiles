@@ -1,0 +1,15 @@
+*._*
+*.DS_Store
+*.cer
+*.crt
+*.csr
+*.key
+*.mobileconfig
+*.p12
+*.pem
+*.pkg
+*.pub
+.chef
+nodes
+sasl_passwd
+settings.py
