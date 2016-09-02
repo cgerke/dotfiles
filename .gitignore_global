@@ -10,6 +10,7 @@
 *.pkg
 *.pub
 .chef
+cgerke.rb
 nodes
 sasl_passwd
 settings.py

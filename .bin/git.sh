@@ -8,7 +8,7 @@ if [ $# -lt 1 ];  then
 	exit
 fi
 
-## git add upstream https://github.com/facebook/IT-CPE.git
+## git remote add upstream https://github.com/facebook/IT-CPE.git
 ## git fetch upstream
 ## git checkout master
 ## git reset --hard upstream/master

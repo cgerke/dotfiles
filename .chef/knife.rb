@@ -6,7 +6,7 @@ log_location             STDOUT
 node_name                "trg"
 client_key               "#{current_dir}/private.pem"
 chef_server_url          "https://api.chef.io/organizations/trg"
-cookbook_path            ["#{current_dir}/../cookbooks", '../cookbooks']
+cookbook_path            ["#{current_dir}/../cookbooks", '../cookbooks', './cookbooks']
 
 current_dir = File.dirname(__FILE__)
 user_email  = `git config --get user.email`
@@ -27,7 +27,7 @@ log_location             STDOUT
 #cache_options( :path => "#{home_dir}/.chef/checksums" )
 
 # We keep our cookbooks in separate repos under a ~/chef/cookbooks dir
-cookbook_path            ["#{current_dir}/../cookbooks", '../cookbooks']
+cookbook_path            ["#{current_dir}/../cookbooks", '../cookbooks', './cookbooks']
 cookbook_copyright       "TRG, Inc."
 cookbook_license         "none"
 cookbook_email           "#{user_email}"

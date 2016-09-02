@@ -1,26 +1,29 @@
 alias ..="cd .."
 alias ...="cd ../.."
-alias a="cat ~/.aliases | grep alias | cut -c 7-"
+alias a="cat ~/.aliases | grep alias | grep -v grep | grep -v ls | cut -c 7-"
 alias c="cd ~/Google\ Drive/code"
 alias d="~/.dotfiles"
+
 alias g="git"
+alias ga="git add"
+alias gb="git branch -a"
+alias gc="git commit"
+alias gd="git diff"
+alias gds="git diff --word-diff"
+alias gi="git remote show origin"
+alias gl="git log --pretty=oneline --graph --abbrev-commit --decorate"
+alias glf="git log --pretty=oneline --graph --abbrev-commit --decorate --numstat"
+alias go="git checkout -b"
+alias gr="git remote -v"
+alias gs="git status"
+alias gp="git push"
+
 alias h="history"
 alias o="open"
 
-alias chefl="sudo chef-client --log_level debug -z -j quickstart.json"
-
-alias dds="find . -type f -name '*.DS_Store' -ls -delete"
-
 alias fun="/usr/bin/fgrep -h "func" "~/.functions" | /usr/bin/fgrep -v fgrep | /usr/bin/sed -e 's/)//' | /usr/bin/sed -e 's/(//'| /usr/bin/sed -e 's/function //' | /usr/bin/sed -e 's/{//' | grep -v .functions | grep -v function_help"
 
-alias hide="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
-alias show="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
-
-alias uenc='python -c "import sys, urllib as ul; print ul.quote_plus(sys.argv[1]);"'
-
-alias VBoxManage="/Applications/VirtualBox.app/Contents/MacOS/VBoxManage"
-alias clvg="create_linux_virtualbox_guest"
-alias lvg="clone_linux_virtualbox_guest"
+alias vb="/Applications/VirtualBox.app/Contents/MacOS/VBoxManage"
 
 # Colour
 if ls --color > /dev/null 2>&1; then # GNU `ls`

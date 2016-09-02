@@ -63,22 +63,39 @@ case $1 in
     VBoxManage modifyvm ${1} --natpf1 "guest_https,tcp,,8443,,443"
     VBoxManage modifyvm ${1} --hda ~/VirtualBox\ VMs/test/test.vdi
     VBoxManage storagectl ${1} --name "IDE Controller" --add ide --controller PIIX4 --bootable on
-  ## -m MacOS Virtual machine iso
+  ;;
+  ## -m MacOS Virtual machine dev env
   m|-m)
-    hdiutil attach /Applications/Install\ OS\ X\ El\ Capitan.app/Contents/SharedSupport/InstallESD.dmg -noverify -nobrowse -mountpoint /Volumes/esd
-    hdiutil create -o ElCapitan3.cdr -size 7316m -layout SPUD -fs HFS+J
-    hdiutil attach ElCapitan3.cdr.dmg -noverify -nobrowse -mountpoint /Volumes/iso
-    asr restore -source /Volumes/esd/BaseSystem.dmg -target /Volumes/iso -noprompt -noverify -erase
-    rm /Volumes/OS\ X\ Base\ System/System/Installation/Packages
-    cp -rp /Volumes/esd/Packages /Volumes/OS\ X\ Base\ System/System/Installation
-    cp -rp /Volumes/esd/BaseSystem.chunklist /Volumes/OS\ X\ Base\ System/
-    cp -rp /Volumes/esd/BaseSystem.dmg /Volumes/OS\ X\ Base\ System/
-    hdiutil detach /Volumes/esd
-    hdiutil detach /Volumes/OS\ X\ Base\ System
-    hdiutil convert ElCapitan3.cdr.dmg -format UDTO -o ElCapitan3.iso
-    mv ElCapitan3.iso.cdr ~/VirtualBox\ VMs/ElCapitan3.iso
-    open ~/VirtualBox\ VMs/
+    while IFS= read -r -d '' n; do
+      installer_app="$n"
+      installer_name=$(echo $installer_app | cut -d'.' -f1 | cut -d'X' -f2 | sed 's/ //g' | cut -d'/' -f5)
+      echo '## Mounting os x installer'
+      hdiutil attach "${installer_app}/Contents/SharedSupport/InstallESD.dmg" -noverify -nobrowse -mountpoint /Volumes/attached_${installer_name}_InstallESD
+      echo '## Creating temporary cdr'
+      hdiutil create -o ~/VirtualBox\ VMs/tmp_${installer_name}.cdr -size 7316m -layout SPUD -fs HFS+J
+      echo '## Attaching temporary cdr'
+      hdiutil attach ~/VirtualBox\ VMs/tmp_${installer_name}.cdr.dmg -noverify -nobrowse -mountpoint /Volumes/attached_${installer_name}_cdr
+      echo '## Restoring os x installer basesystem to attached cdr'
+      asr restore -source /Volumes/attached_${installer_name}_InstallESD/BaseSystem.dmg -target /Volumes/attached_${installer_name}_cdr -noprompt -noverify -erase
+      echo '## Deleting /Volumes/OS\ X\ Base\ System/System/Installation/Packages'
+      rm -f /Volumes/OS\ X\ Base\ System/System/Installation/Packages
+      echo '## Copying osx installer packages'
+      cp -rp /Volumes/attached_${installer_name}_InstallESD/Packages /Volumes/OS\ X\ Base\ System/System/Installation
+      echo '## Copying osx installer chunklist'
+      cp -rp /Volumes/attached_${installer_name}_InstallESD/BaseSystem.chunklist /Volumes/OS\ X\ Base\ System/
+      echo '## Copying osx installer basesystem dmg'
+      cp -rp /Volumes/attached_${installer_name}_InstallESD/BaseSystem.dmg /Volumes/OS\ X\ Base\ System/
+      echo '## Detaching os x installer'
+      hdiutil detach /Volumes/attached_${installer_name}_InstallESD
+      echo '## Detaching basesystem'
+      hdiutil detach /Volumes/OS\ X\ Base\ System
+      hdiutil convert ~/VirtualBox\ VMs/tmp_${installer_name}.cdr.dmg -format UDTO -o ~/VirtualBox\ VMs/tmp_${installer_name}.iso
+      mv ~/VirtualBox\ VMs/tmp_${installer_name}.iso.cdr ~/VirtualBox\ VMs/Mac\ OS\ X\ ${installer_name}.iso
+      rm -f ~/VirtualBox\ VMs/tmp_${installer_name}.cdr.dmg
+      rm -f ~/VirtualBox\ VMs/tmp_${installer_name}.iso
+    done < <(find ~/VirtualBox\ VMs/Install* -maxdepth 0 -type d -print0)
     echo "Change chipset to PIIX3, mount created ISO and boot up."
+    open ~/VirtualBox\ VMs/
   ;;
   ## -t Configure PXE TFTP
   t|-t)

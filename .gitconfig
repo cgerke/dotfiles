@@ -4,13 +4,7 @@
 
 [alias]
 
-	a = add
-	b = branch -a
-	c = commit
-	co = checkout
-
-	# commit all
-	ca = !git add -A && git commit -av
+	aa= !git add -u && git add . && git status
 
 	# contributors
 	conts = shortlog --summary --numbered
@@ -20,11 +14,6 @@
 
 	# current state difference
 	current = diff --patch-with-stat
-
-	d = diff
-
-	# diff summary
-	ds = diff --word-diff
 
 	# diff given a revision
 	dr = "!f() { git diff "$1"^.."$1"; }; f"
@@ -43,32 +32,22 @@
 	# alias help
 	h = "!git config -l | grep alias | cut -c 7-"
 
-	# remote repo info
-	info = git remote show origin
-
 	# last commit difference
 	last = diff --cached HEAD^
-
-	# log
-	l = log --pretty=oneline --graph --abbrev-commit --decorate --numstat
-
-	# last commit
-	lc = diff --cached HEAD^
-
-	# log summary
-	ls = log --pretty=oneline --graph --abbrev-commit
-
-	p = push
 
 	# Push branch
 	pb = push -u origin
 
+	# Rebase
+	## add the remote
+	# git remote add upstream https://github.com/facebook/IT-CPE
+	rb = !git fetch upstream && git checkout master && git reset --hard upstream/master
+	## checkout branch
+	# git rebase master
+	# git push -f origin <BRANCH>
+
 	# redo commit (but remember to "git add first")
 	redo = commit --amend
-
-	remotes = remote -v
-
-	s = status
 
 	# fetch and merge
 	sync = !git fetch origin && git merge origin/master
