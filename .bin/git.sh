@@ -8,6 +8,10 @@ if [ $# -lt 1 ];  then
 	exit
 fi
 
+## How to checkout/download local working copy of a remote branch
+## git checkout -b cpe_screensaver remotes/origin/cpe_screensaver
+
+## How to rebase a branch
 ## git remote add upstream https://github.com/facebook/IT-CPE.git
 ## git fetch upstream
 ## git checkout master
