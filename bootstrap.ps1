@@ -14,9 +14,5 @@ if (![System.IO.Directory]::Exists($modulesDir)) {
 Copy-Item -Path ./Modules/* -Destination $modulesDir -recurse -Force
 Copy-Item -Path ./*.ps1 -Destination $profileDir -Exclude "bootstrap.ps1"
 
-# Sublime
-$sublimeDir = Join-Path $env:USERPROFILE "\AppData\Roaming\Sublime Text 3"
-Copy-Item -Path ./sublime -Destination $sublimeDir -recurse -Force
-
 # Git
 Copy-Item -Path ./.gitconfig -Destination $env:USERPROFILE
