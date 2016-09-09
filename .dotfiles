@@ -29,11 +29,21 @@ do
 	fi
 done
 
-for s in $(ls /opt/dotfiles/.services)
+for w in $(ls /opt/dotfiles/.services)
 do
-	readlink ~/Library/Services/${s} | grep /opt/dotfiles/.services/${s}
+	readlink ~/Library/Services/${w} | grep /opt/dotfiles/.services/${w}
 	if [ $? != 0 ]; then
-		cp -Rf /opt/dotfiles/.services/${s} ~/Library/Services/${s}
+		cp -Rf /opt/dotfiles/.services/${w} ~/Library/Services/${w}
+	fi
+done
+
+for s in $(ls /opt/dotfiles/.ssh)
+do
+	readlink ~/.ssh/${s} | grep /opt/dotfiles/.ssh/${s}
+	if [ $? != 0 ]; then
+		echo "Linking ~/.ssh/${s} to /opt/dotfiles/.ssh/${s}"
+		#[[ -e ~/${s} ]] && mv -f ~/${s} ~/${s}.backup
+		#ln -s /opt/dotfiles/${s} ~/${s}
 	fi
 done
 
