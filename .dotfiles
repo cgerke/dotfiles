@@ -25,7 +25,15 @@ do
 	if [ $? != 0 ]; then
 		echo "Linking ~/${d} to /opt/dotfiles/${d}"
 		[[ -e ~/${d} ]] && mv -f ~/${d} ~/${d}.backup
-		/bin/ln -s /opt/dotfiles/${d} ~/${d}
+		ln -s /opt/dotfiles/${d} ~/${d}
+	fi
+done
+
+for s in $(ls /opt/dotfiles/.services)
+do
+	readlink ~/Library/Services/${s} | grep /opt/dotfiles/.services/${s}
+	if [ $? != 0 ]; then
+		cp -Rf /opt/dotfiles/.services/${s} ~/Library/Services/${s}
 	fi
 done
 
