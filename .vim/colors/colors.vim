@@ -1,3 +1,4 @@
+" Chef managed
 " Lucario - The best colorful flat theme ever
 " Author: Raphael Amorim
 "
@@ -12,7 +13,7 @@ if exists("syntax_on")
   syntax reset
 endif
 
-let g:colors_name = "lucario"
+let g:colors_name = "colors"
 
 hi Cursor       cterm=NONE guifg=#2b3e50 guibg=#f8f8f2
 hi Visual       ctermfg=NONE ctermbg=16 cterm=NONE guifg=NONE guibg=#19242f gui=NONE
@@ -69,7 +70,6 @@ hi Title        ctermfg=231 ctermbg=NONE cterm=bold guifg=#f8f8f2 guibg=NONE gui
 hi Todo         ctermfg=68 ctermbg=NONE cterm=inverse,bold guifg=#5c98cd guibg=NONE gui=inverse,bold
 hi Type         ctermfg=NONE ctermbg=NONE cterm=NONE guifg=NONE guibg=NONE gui=NONE
 hi Underlined   ctermfg=NONE ctermbg=NONE cterm=underline guifg=NONE guibg=NONE gui=underline
-
 
 " Ruby
 hi rubyClass                    ctermfg=203 ctermbg=NONE cterm=NONE guifg=#ff6541 guibg=NONE gui=NONE
@@ -132,3 +132,4 @@ hi cssBraces        ctermfg=NONE ctermbg=NONE cterm=NONE guifg=NONE guibg=NONE g
 " Python
 hi pythonStatement ctermfg=81 ctermbg=NONE cterm=NONE guifg=#66d9ef guibg=NONE gui=italic
 hi pythonBuiltin   ctermfg=81 ctermbg=NONE cterm=NONE guifg=#66d9ef guibg=NONE gui=italic
+0

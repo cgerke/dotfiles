@@ -1,59 +1,50 @@
 [user]
-	email = chris.gerke@gmail.com
-	name = Chris Gerke
+	email = 
+	name =
 
 [alias]
 
-	aa= !git add -u && git add . && git status
+	# Use ssh instead of https on the cli
+	# git remote set-url origin git@github.com:cgerke/yourrepo.git
 
-	# contributors
-	conts = shortlog --summary --numbered
+	branch-name = "!git rev-parse --abbrev-ref HEAD"
+	branch-push = "!git push -u origin $(git branch-name)"
+	branch-push-undo = "!git push origin :$(git branch-name)"
 
-	# credit an author on the latest commit
-	credit = "!f() { git commit --amend --author \"$1 <$2>\" -C HEAD; }; f"
+	cleanup-git = !git remote prune origin && git gc && git clean -dfx && git stash clear
+	contributors = shortlog --summary --numbered
+	current-diff = diff --patch-with-stat
+	file-history = log -u
+	last-add = diff --cached
+	last-add-undo = reset HEAD
+	last-commit = diff --cached HEAD^
+	log-summary = log --pretty=oneline --graph --abbrev-commit --decorate
+	log-detail = log --pretty=oneline --graph --abbrev-commit --decorate --numstat
 
-	# current state difference
-	current = diff --patch-with-stat
+	# Reset master to match upstream losing any local changes
+	# Requires upstream
+	# git remote add upstream <URL>
+	reset-master-to-upstream = !git fetch upstream && git checkout master && git reset --hard upstream/master
+	# git push origin mater --force
 
-	# diff given a revision
-	dr = "!f() { git diff "$1"^.."$1"; }; f"
+	# git remote add upstream <URL>
+	sync-branch-to-master = !git rebase master
 
-	# find a file
-	f = "!git ls-files | grep -i"
+	# Sync a repo (master) with its origin (master)
+	sync-master-to-origin = !git fetch origin && git merge origin/master
 
-	# find a string
-	fs = grep -Ii
-
-	# file history
-	fh = log -u
-
-	gbdd = !git push origin --delete $1
-
-	# alias help
-	h = "!git config -l | grep alias | cut -c 7-"
-
-	# last commit difference
-	last = diff --cached HEAD^
-
-	# Push branch
-	pb = push -u origin
-
-	# Rebase
-	## add the remote
-	# git remote add upstream https://github.com/facebook/IT-CPE
-	rb = !git fetch upstream && git checkout master && git reset --hard upstream/master
-	## checkout branch
-	# git rebase master
-	# git push -f origin <BRANCH>
-
-	# redo commit (but remember to "git add first")
-	redo = commit --amend
-
-	# fetch and merge
-	sync = !git fetch origin && git merge origin/master
-
-	## git remote add upstream https://github.com/facebook/IT-CPE
-	sync-fork = !git checkout master && git fetch upstream && git pull upstream master
+	# Sync a forked repo (master) with its upstream (master)
+	# Requires upstream
+	# git remote add upstream <URL>
+	sync-master-to-upstream = !git checkout master && git fetch upstream && git pull upstream master
 
 [core]
-	excludesfile = ~/.gitignore_global
+	excludesfile = /Users/cgerke/.gitignore_global
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path =
+[mergetool "sourcetree"]
+	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+[commit]
+	template = /Users/cgerke/.stCommitMsg

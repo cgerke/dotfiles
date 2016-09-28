@@ -445,23 +445,6 @@ function install_drive() {
   fi
 }
 
-function install_sublime() {
-  sudo -v
-  if [ ! -x /Applications/Sublime\ Text.app ]; then
-    version=$(curl https://www.sublimetext.com/updates/3/stable/appcast_osx.xml | grep dmg | cut -d'"' -f2 | sed 's/ /%20/g')
-    curl -#L -o ~/Downloads/sublime.dmg "$version"
-    hdiutil attach ~/Downloads/sublime.dmg
-    sleep 3
-    sudo cp -Rf /Volumes/Sublime*/Sublime\ Text.app /Applications/
-    sleep 3
-    hdiutil detach /Volumes/Sublime*
-    rm -Rf ~/Downloads/sublime.dmg
-    local/bin/dockutil --add /Applications/Sublime\ Text.app
-  else
-    defaults read /Applications/Sublime\ Text.app/Contents/Info.plist CFBundleVersion
-  fi
-}
-
 function centos_ks_hash() {
   salt=$(/usr/bin/uuidgen)
   /bin/echo "import crypt,getpass; print crypt.crypt(getpass.getpass(), \"$6${salt}\")" | python -
