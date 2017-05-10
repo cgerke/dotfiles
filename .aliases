@@ -1,37 +1,140 @@
-alias ..="cd .."
-alias ...="cd ../.."
-alias a="cat ~/.aliases | grep alias | grep -v grep | grep -v ls | cut -c 7-"
-alias c="cd ~/Google\ Drive/code"
-alias ch='sudo chef-client -z -j quickstart.json'
-alias d="~/.dotfiles"
-
-# Simple git aliases go here, more complex in .gitconfig
-alias g="git"
-alias ga="git add"
-alias gc="git commit"
-alias gd="git diff"
-alias gh="git config -l | grep alias | cut -c 7-"
-alias gi="git remote show origin"
-alias go="git checkout"
-alias gr="git remote -v"
-alias gs="git status"
-alias gp="git push"
-
-alias h="history"
-alias o="open"
-
-alias fun="/usr/bin/fgrep -h "func" "~/.functions" | /usr/bin/fgrep -v fgrep | /usr/bin/sed -e 's/)//' | /usr/bin/sed -e 's/(//'| /usr/bin/sed -e 's/function //' | /usr/bin/sed -e 's/{//' | grep -v .functions | grep -v function_help"
-
-alias vb="/Applications/VirtualBox.app/Contents/MacOS/VBoxManage"
-
 # Colour
-if ls --color > /dev/null 2>&1; then # GNU `ls`
-	colorflag="--color"
-else # OS X `ls`
-	colorflag="-G"
+if ls --color > /dev/null 2>&1; then # gnu `ls`
+  colour="--color"
+else # macos `ls`
+  colour="-G"
 fi
-alias l="ls -la ${colorflag}"
-alias ls="command ls ${colorflag}"
+
+# Redefine
+alias ls="command ls ${colour}"
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
+
+# Utilities
+alias kickstart="sudo kickstart \
+-activate \
+-configure \
+-allowAccessFor \
+-allUsers \
+-access -on \
+-privs -all \
+-clientopts -setvnclegacy -vnclegacy yes \
+-restart -agent"
+
+alias sshon="sudo systemsetup -setremotelogin on"
+
+# Functions
+function admin_user (){ # add a user to the admin group, requires 1 arg
+  [ $# -gt 0 ] && sudo dsmemberutil checkmembership -U "$1" -G admin | grep 'not' && sudo dseditgroup -o edit -a "$1" -t user admin
+}
+
+function c (){ # code repos
+  cd ~/Google\ Drive/code
+}
+
+function cpu(){ # display process type
+  system_profiler SPHardwareDataType | grep "Processor Name" | awk '{print $3$4$5$6$7$8$9}'
+}
+
+function ci(){ # chef cpe_init
+  cd ~/Google\ Drive/code/cookbooks
+  sudo chef-client -z -o cpe_init
+}
+
+function delete_ds(){ # delete ds_store files
+  find . -type f -name '*.DS_Store' -ls -delete
+}
+
+function ff(){ # fast find, requires 1 arg
+  [ $# -gt 0 ] && find . -name $1
+}
+
+function ghr(){ # github repo, requires 1 argument
+  [ $# -gt 0 ] && curl -u 'cgerke' https://api.github.com/user/repos -d "{\"name\":\"$1\"}"
+}
+
+function h (){ # display function summary (provide the funcname for details)
+  if [ $# -eq 0 ]; then
+    less ~/.aliases | grep function | sed -e 's/(){//' | grep -v '##'
+  else
+    type $1
+  fi
+}
+
+function hide(){ # hidden file type `toggle`
+  if [ $(defaults read com.apple.finder AppleShowAllFiles) == true ]; then
+    defaults write com.apple.finder AppleShowAllFiles false
+  else
+    defaults write com.apple.finder AppleShowAllFiles true
+  fi
+  killall Finder
+}
+
+function http-server(){ # spin a http server on localhost
+  sleep 1 && open "http://localhost:4004/" &
+  python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "4004";
+}
+
+function ip(){ # display ip addresses
+  echo "en0: $(ipconfig getifaddr en0)"
+  echo "en1: $(ipconfig getifaddr en1)"
+  echo "wan: $(dig +short myip.opendns.com @resolver1.opendns.com)"
+}
+
+function jekyll-server(){ # spin a jekyll server on localhost
+	gem list | grep github-pages
+	if [ $? == 0 ]; then
+		sudo gem install github-pages
+		sleep 1 && open "http://127.0.0.1:4000/" &
+		jekyll serve
+	fi
+}
+
+function ku(){ # knife cookbook upload, requires 1 argument
+  [ $# -gt 0 ] && knife cookbook upload $1
+}
+
+function mac(){ # display mac addresses
+	echo "en0: $(networksetup -getMACADDRESS en0 | awk '{print $3}' | sed s/://g)"
+	echo "en1: $(networksetup -getMACADDRESS en1 | awk '{print $3}' | sed s/://g)"
+}
+
+function memory(){ # display system memory
+	system_profiler SPHardwareDataType | grep "Memory" | awk '{print $2$3}'
+}
+
+function model(){ # display system model
+	ioreg -rd1 -c IOPlatformExpertDevice | grep -E model | awk '{print $3}' | sed 's/\<\"//' | sed 's/\"\>//'
+}
+
+function mute(){ # mute system volume
+	osascript -e "set Volume 0"
+}
+
+function php-server(){ # spin a php server on localhost
+	sleep 1 && open "http://$(ipconfig getifaddr en1):4004/" &
+	php -S "$(ipconfig getifaddr en1):4004";
+}
+
+function serial(){ # display system serial
+	ioreg -l | grep IOPlatformSerialNumber | awk '{print $4}' | cut -d '"' -f 2
+}
+
+function timezone(){ # display timeserver
+  sudo systemsetup -getusingnetworktime
+  sudo systemsetup -getnetworktimeserver
+}
+
+function timezone(){ # display timezone
+	sudo systemsetup -gettimezone 'Australia/Perth'
+}
+
+function version(){ # display system software version
+  sw_vers -productVersion
+  sw_vers -buildVersion
+}
+
+function vb(){ # working with virtualbox
+  vb='/Applications/VirtualBox.app/Contents/MacOS/VBoxManage'
+}

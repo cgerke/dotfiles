@@ -1,811 +1,131 @@
-#!/bin/bash
-# https://github.com/cgerke/dotfiles
-
-function function_help() {
-  echo "${2}"
-  cat ~/.functions | grep -v 'grep' | grep ${1} | grep '##' | sed "s/## ${1} - //" | sed -e "s/^[ \t]*//"
+function script:Append-Path([string] $path ) {
+   if ( -not [string]::IsNullOrEmpty($path) ) {
+      if ( (test-path $path) -and (-not $env:PATH.contains($path)) ) {
+         $env:PATH += ';' + $path
+      }
+   }
 }
 
+function Test-Git {
+    try {
+        $git = (git --version)
+        Write-Host $git
+    } catch {
+        Write-Host "Git not found, will install."
+        # Install git using PowerShellGet (-gt PS2)
+        If ($PSVersionTable.PSVersion.Major -gt 2) { 
+            PowerShellGet\Install-Module posh-git -Scope CurrentUser
+            Update-Module posh-git
+        } else {
+            Write-Host "PowerShellGet requires PS3 or higher to install git."
+            #choco install poshgit (-lt PS3)
+        }
+        # Maybe not required
+        Reload-Powershell
+    }
 
-function configure_postfix() {
-  sudo -v
-  sudo cat "/etc/postfix/main.cf" | grep 'smtp.gmail.com'
-  if [ $? != 0 ]; then
-    date_string=$(/bin/date +"%Y%m%d%H%M%S")
-    sudo echo "#Gmail SMTP
-    relayhost=[smtp.gmail.com]:587
-    # Enable SASL authentication in the Postfix SMTP client.
-    smtp_sasl_auth_enable=yes
-    smtp_sasl_password_maps=hash:/etc/postfix/sasl_passwd
-    smtp_sasl_security_options=noanonymous
-    smtp_sasl_mechanism_filter=login
-    # Enable Transport Layer Security (TLS), i.e. SSL.
-    smtp_use_tls=yes
-    smtp_tls_security_level=encrypt
-    tls_random_source=dev:/dev/urandom" >> "/etc/postfix/main.cf"
-    sudo chmod 644 "/etc/postfix/main.cf"
-    sudo chown root:wheel "/etc/postfix/main.cf"
-    # Backup
-    sudo cp "/etc/postfix/sasl_passwd" "/etc/postfix/sasl_passwd.backup.${date_string}"
-    echo "Gmail email address?"
-    read gmail_addr
-    echo "Gmail API password?"
-    read sasl_password
-    sudo echo "[smtp.gmail.com]:587 ${gmail_addr}:${sasl_password}" > "/etc/postfix/sasl_passwd"
-    sudo chmod 600 "/etc/postfix/sasl_passwd"
-    sudo chown root:wheel "/etc/postfix/sasl_passwd"
-    sudo postmap /etc/postfix/sasl_passwd
-    sudo postfix stop
-    sudo postfix start
-  fi
+    <#
+        .SYNOPSIS
+            Checks if git is available and attempts to install it. https://github.com/dahlbyk/posh-git
+        .EXAMPLE
+            PS C:\> Test-Git
+        .OUTPUTS
+            System.Boolean
+                True if git is installed, false if not.
+    #>
 }
 
-function install_autodmg() {
-  if [ ! -x /Applications/AutoDMG.app ]; then
-    version=$(curl https://github.com/MagerValp/AutoDMG/releases | grep dmg | grep download | cut -d'"' -f2 | head -1)
-    curl -#L -o ~/Downloads/autodmg.dmg https://github.com/$version
-    hdiutil attach ~/Downloads/autodmg.dmg
-    sudo cp -Rf /Volumes/AutoDMG*/*.app /Applications/
-    sleep 3
-    hdiutil detach /Volumes/AutoDMG*
-  else
-    defaults read /Applications/AutoDMG.app/Contents/Info.plist CFBundleVersion
-  fi
+# function Set-GitHub {
+#     If ($PSVersionTable.PSVersion.Major -gt 2) { 
+#         . (Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1")
+#         . $env:github_posh_git\profile.example.ps1
+#     }
+#     $GitPath = Get-ChildItem -Recurse -Force "$HOME\AppData\Local\GitHub" -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $true) -and  ( $_.Name -like "*cmd*") } | % { $_.fullname }
+#     $env:Path += ";$GitPath"
+# }
+
+function Reload-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
 }
 
-function autodmg_base() {
-  /bin/echo '<?xml version="1.0" encoding="UTF-8"?>
-  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-  <plist version="1.0">
-  <dict>
-    <key>AdditionalPackages</key>
-    <array/>
-    <key>ApplyUpdates</key>
-    <true/>
-    <key>SourcePath</key>
-    <string>/Applications/Install OS X El Capitan.app</string>
-    <key>OutputPath</key>
-      <string>~/Desktop/base-%OSVERSION%-%OSBUILD%.hfs.dmg</string>
-    <key>TemplateFormat</key>
-    <string>1.0</string>
-    <key>VolumeName</key>
-    <string>Macintosh HD</string>
-    <key>VolumeSize</key>
-    <integer>20</integer>
-  </dict>
-  </plist>
-  ' > /tmp/base.adtmpl
-  /Applications/AutoDMG.app/Contents/MacOS/AutoDMG --verbose --log-level 7 --logfile - build /tmp/base.adtmpl
+function Set-UI {
+    # $Host.UI.RawUI.WindowTitle = "Elevated"
+    $Host.UI.RawUI.BackgroundColor = 'Black'
+    # $Host.UI.RawUI.ForegroundColor = 'White'
+    # $Host.PrivateData.ErrorForegroundColor = 'Red'
+    # $Host.PrivateData.ErrorBackgroundColor = $bckgrnd
+    # $Host.PrivateData.WarningForegroundColor = 'Magenta'
+    # $Host.PrivateData.WarningBackgroundColor = $bckgrnd
+    # $Host.PrivateData.DebugForegroundColor = 'Yellow'
+    # $Host.PrivateData.DebugBackgroundColor = $bckgrnd
+    # $Host.PrivateData.VerboseForegroundColor = 'Green'
+    # $Host.PrivateData.VerboseBackgroundColor = $bckgrnd
+    # $Host.PrivateData.ProgressForegroundColor = 'Cyan'
+    # $Host.PrivateData.ProgressBackgroundColor = $bckgrnd
+    Clear-Host
 }
 
-function autodmg_chef() {
-  /bin/echo '<?xml version="1.0" encoding="UTF-8"?>
-  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-  <plist version="1.0">
-  <dict>
-    <key>AdditionalPackages</key>
-    <array>
-      <string>~/Desktop/chef.pkg</string>
-    </array>
-    <key>ApplyUpdates</key>
-    <false/>
-    <key>SourcePath</key>
-    <string>~/Desktop/base-%OSVERSION%-%OSBUILD%.hfs.dmg</string>
-    <key>OutputPath</key>
-      <string>~/Desktop/chef-%OSVERSION%-%OSBUILD%.hfs.dmg</string>
-    <key>TemplateFormat</key>
-    <string>1.0</string>
-    <key>VolumeName</key>
-    <string>Macintosh HD</string>
-    <key>VolumeSize</key>
-    <integer>20</integer>
-  </dict>
-  </plist>
-  ' > /tmp/chef.adtmpl
-  /Applications/AutoDMG.app/Contents/MacOS/AutoDMG --verbose --log-level 7 --logfile - build /usr/local/scripts/chef.adtmpl
+function Sudo-PowerShell {
+    if ($args.Length -eq 1) {
+        start-process $args[0] -verb "runAs"
+        write-host 'ok'
+    }
+    if ($args.Length -gt 1) {
+        start-process $args[0] -ArgumentList $args[1..$args.Length] -verb "runAs"
+    }
 }
 
-install_chrome() {
-  sudo -v
-  if [ ! -x /Applications/Google\ Chrome.app ]; then
-    curl -#L -o ~/Downloads/chrome.dmg https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg
-    hdiutil attach ~/Downloads/chrome.dmg
-    sleep 3
-    sudo cp -Rf /Volumes/Google\ Chrome/Google\ Chrome.app /Applications/
-    sleep 3
-    hdiutil detach /Volumes/Google*
-    rm -Rf ~/Downloads/chrome.dmg
-    /usr/local/bin/dockutil --add /Applications/Google\ Chrome.app
-  else
-    defaults read /Applications/Google\ Chrome.app/Contents/Info.plist KSVersion
-  fi
+function Test-IsAdmin {
+    try {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent();
+        $principal = New-Object Security.Principal.WindowsPrincipal -ArgumentList $identity
+        return $principal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )
+    } catch {
+        throw "Failed to determine if the current user has elevated privileges. The error was: '{0}'." -f $_
+    }
+
+    <#
+        .SYNOPSIS
+            Checks if the current Powershell instance is running with elevated privileges or not.
+        .EXAMPLE
+            PS C:\> Test-IsAdmin
+        .OUTPUTS
+            System.Boolean
+                True if the current Powershell is elevated, false if not.
+    #>
 }
 
-install_aerial() {
-  sudo -v
-  byhost_uuid=$(/usr/sbin/system_profiler SPHardwareDataType | grep "Hardware UUID" | cut -c22-57)
-  if [ -d /opt/aerial ]; then
-    pushd /opt/aerial
-    sudo git fetch
-  else
-    sudo git clone https://github.com/cgerke/Aerial.git /opt/aerial
-  fi
-
-  sudo rm -Rf /Library/Screen\ Savers/Aerial.saver
-  sudo cp -Rf /opt/aerial/Aerial.saver /Library/Screen\ Savers/
-  echo '<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>b1-2</key>
-  <false/>
-  <key>b1-3</key>
-  <false/>
-  <key>b1-4</key>
-  <false/>
-  <key>b10-3</key>
-  <false/>
-  <key>b2-1</key>
-  <false/>
-  <key>b2-3</key>
-  <false/>
-  <key>b2-4</key>
-  <false/>
-  <key>b3-2</key>
-  <false/>
-  <key>b3-3</key>
-  <false/>
-  <key>b4-1</key>
-  <false/>
-  <key>b4-2</key>
-  <false/>
-  <key>b4-3</key>
-  <false/>
-  <key>b5-1</key>
-  <false/>
-  <key>b5-2</key>
-  <false/>
-  <key>b5-3</key>
-  <false/>
-  <key>b6-1</key>
-  <false/>
-  <key>b6-4</key>
-  <false/>
-  <key>b7-2</key>
-  <false/>
-  <key>b7-3</key>
-  <false/>
-  <key>b8-1</key>
-  <false/>
-  <key>b8-2</key>
-  <false/>
-  <key>b8-3</key>
-  <false/>
-  <key>b9-3</key>
-  <false/>
-  <key>cacheDirectory</key>
-  <string>/opt/cache</string>
-  <key>manifest</key>
-  <data>
-  WwogICB7CiAgICAgICJpZCIgOiAiYjEiLAogICAgICAiYXNzZXRzIiA6IFsKICAgICAg
-  ICAgewogICAgICAgICAgICAidXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFwcGxlLmNv
-  bS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92aWRlb3Mv
-  YjEtMS5tb3YiLAogICAgICAgICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6ICJIYXdh
-  aWkiLAogICAgICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAgICAiaWQi
-  IDogImIxLTEiLAogICAgICAgICAgICAidGltZU9mRGF5IiA6ICJkYXkiCiAgICAgICAg
-  IH0sCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jv
-  cy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJj
-  ZXMvdmlkZW9zL2IxLTIubW92IiwKICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJl
-  bCIgOiAiTG9uZG9uIiwKICAgICAgICAgICAgInR5cGUiIDogInZpZGVvIiwKICAgICAg
-  ICAgICAgImlkIiA6ICJiMS0yIiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAibmln
-  aHQiCiAgICAgICAgIH0sCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0
-  cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9B
-  dXR1bW5SZXNvdXJjZXMvdmlkZW9zL2IxLTMubW92IiwKICAgICAgICAgICAgImFjY2Vz
-  c2liaWxpdHlMYWJlbCIgOiAiTmV3IFlvcmsgQ2l0eSIsCiAgICAgICAgICAgICJ0eXBl
-  IiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjEtMyIsCiAgICAgICAgICAg
-  ICJ0aW1lT2ZEYXkiIDogImRheSIKICAgICAgICAgfSwKICAgICAgICAgewogICAgICAg
-  ICAgICAidXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8w
-  MDAvRmVhdHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92aWRlb3MvYjEtNC5tb3YiLAog
-  ICAgICAgICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6ICJTYW4gRnJhbmNpc2NvIiwK
-  ICAgICAgICAgICAgInR5cGUiIDogInZpZGVvIiwKICAgICAgICAgICAgImlkIiA6ICJi
-  MS00IiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAibmlnaHQiCiAgICAgICAgIH0K
-  ICAgICAgXQogICB9LAogICB7CiAgICAgICJpZCIgOiAiYjIiLAogICAgICAiYXNzZXRz
-  IiA6IFsKICAgICAgICAgewogICAgICAgICAgICAidXJsIiA6ICJodHRwOi8vYTEucGhv
-  Ym9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2L0F1dHVtblJlc291
-  cmNlcy92aWRlb3MvYjItMS5tb3YiLAogICAgICAgICAgICAiYWNjZXNzaWJpbGl0eUxh
-  YmVsIiA6ICJDaGluYSIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAg
-  ICAgICAgICJpZCIgOiAiYjItMSIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogImRh
-  eSIKICAgICAgICAgfSwKICAgICAgICAgewogICAgICAgICAgICAidXJsIiA6ICJodHRw
-  Oi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2L0F1
-  dHVtblJlc291cmNlcy92aWRlb3MvYjItMi5tb3YiLAogICAgICAgICAgICAiYWNjZXNz
-  aWJpbGl0eUxhYmVsIiA6ICJIYXdhaWkiLAogICAgICAgICAgICAidHlwZSIgOiAidmlk
-  ZW8iLAogICAgICAgICAgICAiaWQiIDogImIyLTIiLAogICAgICAgICAgICAidGltZU9m
-  RGF5IiA6ICJkYXkiCiAgICAgICAgIH0sCiAgICAgICAgIHsKICAgICAgICAgICAgInVy
-  bCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1
-  cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2IyLTMubW92IiwKICAgICAgICAg
-  ICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiTmV3IFlvcmsgQ2l0eSIsCiAgICAgICAg
-  ICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjItMyIsCiAg
-  ICAgICAgICAgICJ0aW1lT2ZEYXkiIDogIm5pZ2h0IgogICAgICAgICB9LAogICAgICAg
-  ICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29t
-  L3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9i
-  Mi00Lm1vdiIsCiAgICAgICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIlNhbiBG
-  cmFuY2lzY28iLAogICAgICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAg
-  ICAiaWQiIDogImIyLTQiLAogICAgICAgICAgICAidGltZU9mRGF5IiA6ICJuaWdodCIK
-  ICAgICAgICAgfQogICAgICBdCiAgIH0sCiAgIHsKICAgICAgImlkIiA6ICJiMyIsCiAg
-  ICAgICJhc3NldHMiIDogWwogICAgICAgICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0
-  dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYv
-  QXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iMy0xLm1vdiIsCiAgICAgICAgICAgICJhY2Nl
-  c3NpYmlsaXR5TGFiZWwiIDogIkxvbmRvbiIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2
-  aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjMtMSIsCiAgICAgICAgICAgICJ0aW1l
-  T2ZEYXkiIDogIm5pZ2h0IgogICAgICAgICB9LAogICAgICAgICB7CiAgICAgICAgICAg
-  ICJ1cmwiIDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9G
-  ZWF0dXJlcy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iMy0yLm1vdiIsCiAgICAg
-  ICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIk5ldyBZb3JrIENpdHkiLAogICAg
-  ICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImIzLTIi
-  LAogICAgICAgICAgICAidGltZU9mRGF5IiA6ICJkYXkiCiAgICAgICAgIH0sCiAgICAg
-  ICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5j
-  b20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9z
-  L2IzLTMubW92IiwKICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiU2Fu
-  IEZyYW5jaXNjbyIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAg
-  ICAgICJpZCIgOiAiYjMtMyIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogImRheSIK
-  ICAgICAgICAgfQogICAgICBdCiAgIH0sCiAgIHsKICAgICAgImlkIiA6ICJiNCIsCiAg
-  ICAgICJhc3NldHMiIDogWwogICAgICAgICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0
-  dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYv
-  QXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iNC0xLm1vdiIsCiAgICAgICAgICAgICJhY2Nl
-  c3NpYmlsaXR5TGFiZWwiIDogIkhhd2FpaSIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2
-  aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjQtMSIsCiAgICAgICAgICAgICJ0aW1l
-  T2ZEYXkiIDogImRheSIKICAgICAgICAgfSwKICAgICAgICAgewogICAgICAgICAgICAi
-  dXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAvRmVh
-  dHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92aWRlb3MvYjQtMi5tb3YiLAogICAgICAg
-  ICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6ICJOZXcgWW9yayBDaXR5IiwKICAgICAg
-  ICAgICAgInR5cGUiIDogInZpZGVvIiwKICAgICAgICAgICAgImlkIiA6ICJiNC0yIiwK
-  ICAgICAgICAgICAgInRpbWVPZkRheSIgOiAibmlnaHQiCiAgICAgICAgIH0sCiAgICAg
-  ICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5j
-  b20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9z
-  L2I0LTMubW92IiwKICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiU2Fu
-  IEZyYW5jaXNjbyIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAg
-  ICAgICJpZCIgOiAiYjQtMyIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogImRheSIK
-  ICAgICAgICAgfQogICAgICBdCiAgIH0sCiAgIHsKICAgICAgImlkIiA6ICJiNSIsCiAg
-  ICAgICJhc3NldHMiIDogWwogICAgICAgICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0
-  dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYv
-  QXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iNS0xLm1vdiIsCiAgICAgICAgICAgICJhY2Nl
-  c3NpYmlsaXR5TGFiZWwiIDogIkNoaW5hIiwKICAgICAgICAgICAgInR5cGUiIDogInZp
-  ZGVvIiwKICAgICAgICAgICAgImlkIiA6ICJiNS0xIiwKICAgICAgICAgICAgInRpbWVP
-  ZkRheSIgOiAiZGF5IgogICAgICAgICB9LAogICAgICAgICB7CiAgICAgICAgICAgICJ1
-  cmwiIDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0
-  dXJlcy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iNS0yLm1vdiIsCiAgICAgICAg
-  ICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIkxvbmRvbiIsCiAgICAgICAgICAgICJ0
-  eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjUtMiIsCiAgICAgICAg
-  ICAgICJ0aW1lT2ZEYXkiIDogImRheSIKICAgICAgICAgfSwKICAgICAgICAgewogICAg
-  ICAgICAgICAidXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAw
-  MC8wMDAvRmVhdHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92aWRlb3MvYjUtMy5tb3Yi
-  LAogICAgICAgICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6ICJTYW4gRnJhbmNpc2Nv
-  IiwKICAgICAgICAgICAgInR5cGUiIDogInZpZGVvIiwKICAgICAgICAgICAgImlkIiA6
-  ICJiNS0zIiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAibmlnaHQiCiAgICAgICAg
-  IH0KICAgICAgXQogICB9LAogICB7CiAgICAgICJpZCIgOiAiYjYiLAogICAgICAiYXNz
-  ZXRzIiA6IFsKICAgICAgICAgewogICAgICAgICAgICAidXJsIiA6ICJodHRwOi8vYTEu
-  cGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2L0F1dHVtblJl
-  c291cmNlcy92aWRlb3MvYjYtMS5tb3YiLAogICAgICAgICAgICAiYWNjZXNzaWJpbGl0
-  eUxhYmVsIiA6ICJDaGluYSIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAg
-  ICAgICAgICAgICJpZCIgOiAiYjYtMSIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDog
-  ImRheSIKICAgICAgICAgfSwKICAgICAgICAgewogICAgICAgICAgICAidXJsIiA6ICJo
-  dHRwOi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2
-  L0F1dHVtblJlc291cmNlcy92aWRlb3MvYjYtMi5tb3YiLAogICAgICAgICAgICAiYWNj
-  ZXNzaWJpbGl0eUxhYmVsIiA6ICJIYXdhaWkiLAogICAgICAgICAgICAidHlwZSIgOiAi
-  dmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImI2LTIiLAogICAgICAgICAgICAidGlt
-  ZU9mRGF5IiA6ICJuaWdodCIKICAgICAgICAgfSwKICAgICAgICAgewogICAgICAgICAg
-  ICAidXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFwcGxlLmNvbS91cy9yMTAwMC8wMDAv
-  RmVhdHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92aWRlb3MvYjYtMy5tb3YiLAogICAg
-  ICAgICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6ICJMb25kb24iLAogICAgICAgICAg
-  ICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImI2LTMiLAogICAg
-  ICAgICAgICAidGltZU9mRGF5IiA6ICJkYXkiCiAgICAgICAgIH0sCiAgICAgICAgIHsK
-  ICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMv
-  cjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2I2LTQu
-  bW92IiwKICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiU2FuIEZyYW5j
-  aXNjbyIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJp
-  ZCIgOiAiYjYtNCIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogIm5pZ2h0IgogICAg
-  ICAgICB9CiAgICAgIF0KICAgfSwKICAgewogICAgICAiaWQiIDogImI3IiwKICAgICAg
-  ImFzc2V0cyIgOiBbCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDov
-  L2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1
-  bW5SZXNvdXJjZXMvdmlkZW9zL2I3LTEubW92IiwKICAgICAgICAgICAgImFjY2Vzc2li
-  aWxpdHlMYWJlbCIgOiAiSGF3YWlpIiwKICAgICAgICAgICAgInR5cGUiIDogInZpZGVv
-  IiwKICAgICAgICAgICAgImlkIiA6ICJiNy0xIiwKICAgICAgICAgICAgInRpbWVPZkRh
-  eSIgOiAiZGF5IgogICAgICAgICB9LAogICAgICAgICB7CiAgICAgICAgICAgICJ1cmwi
-  IDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0dXJl
-  cy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iNy0yLm1vdiIsCiAgICAgICAgICAg
-  ICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIk5ldyBZb3JrIENpdHkiLAogICAgICAgICAg
-  ICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImI3LTIiLAogICAg
-  ICAgICAgICAidGltZU9mRGF5IiA6ICJkYXkiCiAgICAgICAgIH0sCiAgICAgICAgIHsK
-  ICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMv
-  cjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2I3LTMu
-  bW92IiwKICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiU2FuIEZyYW5j
-  aXNjbyIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJp
-  ZCIgOiAiYjctMyIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogIm5pZ2h0IgogICAg
-  ICAgICB9CiAgICAgIF0KICAgfSwKICAgewogICAgICAiaWQiIDogImI4IiwKICAgICAg
-  ImFzc2V0cyIgOiBbCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDov
-  L2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1
-  bW5SZXNvdXJjZXMvdmlkZW9zL2IxMC00Lm1vdiIsCiAgICAgICAgICAgICJhY2Nlc3Np
-  YmlsaXR5TGFiZWwiIDogIlNhbiBGcmFuY2lzY28iLAogICAgICAgICAgICAidHlwZSIg
-  OiAidmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImIxMC00IiwKICAgICAgICAgICAg
-  InRpbWVPZkRheSIgOiAibmlnaHQiCiAgICAgICAgIH0sCiAgICAgICAgIHsKICAgICAg
-  ICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAv
-  MDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2I4LTIubW92IiwK
-  ICAgICAgICAgICAgImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiU2FuIEZyYW5jaXNjbyIs
-  CiAgICAgICAgICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAi
-  YjgtMiIsCiAgICAgICAgICAgICJ0aW1lT2ZEYXkiIDogImRheSIKICAgICAgICAgfSwK
-  ICAgICAgICAgewogICAgICAgICAgICAidXJsIiA6ICJodHRwOi8vYTEucGhvYm9zLmFw
-  cGxlLmNvbS91cy9yMTAwMC8wMDAvRmVhdHVyZXMvYXR2L0F1dHVtblJlc291cmNlcy92
-  aWRlb3MvYjgtMy5tb3YiLAogICAgICAgICAgICAiYWNjZXNzaWJpbGl0eUxhYmVsIiA6
-  ICJTYW4gRnJhbmNpc2NvIiwKICAgICAgICAgICAgInR5cGUiIDogInZpZGVvIiwKICAg
-  ICAgICAgICAgImlkIiA6ICJiOC0zIiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAi
-  ZGF5IgogICAgICAgICB9CiAgICAgIF0KICAgfSwKICAgewogICAgICAiaWQiIDogImI5
-  IiwKICAgICAgImFzc2V0cyIgOiBbCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIg
-  OiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVz
-  L2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2I5LTEubW92IiwKICAgICAgICAgICAg
-  ImFjY2Vzc2liaWxpdHlMYWJlbCIgOiAiSGF3YWlpIiwKICAgICAgICAgICAgInR5cGUi
-  IDogInZpZGVvIiwKICAgICAgICAgICAgImlkIiA6ICJiOS0xIiwKICAgICAgICAgICAg
-  InRpbWVPZkRheSIgOiAiZGF5IgogICAgICAgICB9LAogICAgICAgICB7CiAgICAgICAg
-  ICAgICJ1cmwiIDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAw
-  MC9GZWF0dXJlcy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iOS0yLm1vdiIsCiAg
-  ICAgICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIkxvbmRvbiIsCiAgICAgICAg
-  ICAgICJ0eXBlIiA6ICJ2aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjktMiIsCiAg
-  ICAgICAgICAgICJ0aW1lT2ZEYXkiIDogIm5pZ2h0IgogICAgICAgICB9LAogICAgICAg
-  ICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29t
-  L3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYvQXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9i
-  OS0zLm1vdiIsCiAgICAgICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIlNhbiBG
-  cmFuY2lzY28iLAogICAgICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAg
-  ICAiaWQiIDogImI5LTMiLAogICAgICAgICAgICAidGltZU9mRGF5IiA6ICJkYXkiCiAg
-  ICAgICAgIH0KICAgICAgXQogICB9LAogICB7CiAgICAgICJpZCIgOiAiYjEwIiwKICAg
-  ICAgImFzc2V0cyIgOiBbCiAgICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0
-  cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9B
-  dXR1bW5SZXNvdXJjZXMvdmlkZW9zL2IxMC0xLm1vdiIsCiAgICAgICAgICAgICJhY2Nl
-  c3NpYmlsaXR5TGFiZWwiIDogIkhhd2FpaSIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2
-  aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjEwLTEiLAogICAgICAgICAgICAidGlt
-  ZU9mRGF5IiA6ICJkYXkiCiAgICAgICAgIH0sCiAgICAgICAgIHsKICAgICAgICAgICAg
-  InVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBsZS5jb20vdXMvcjEwMDAvMDAwL0Zl
-  YXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlkZW9zL2IxMC0yLm1vdiIsCiAgICAg
-  ICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDogIk5ldyBZb3JrIENpdHkiLAogICAg
-  ICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAgICAgICAgICAiaWQiIDogImIxMC0y
-  IiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAibmlnaHQiCiAgICAgICAgIH0sCiAg
-  ICAgICAgIHsKICAgICAgICAgICAgInVybCIgOiAiaHR0cDovL2ExLnBob2Jvcy5hcHBs
-  ZS5jb20vdXMvcjEwMDAvMDAwL0ZlYXR1cmVzL2F0di9BdXR1bW5SZXNvdXJjZXMvdmlk
-  ZW9zL2IxMC0zLm1vdiIsCiAgICAgICAgICAgICJhY2Nlc3NpYmlsaXR5TGFiZWwiIDog
-  IlNhbiBGcmFuY2lzY28iLAogICAgICAgICAgICAidHlwZSIgOiAidmlkZW8iLAogICAg
-  ICAgICAgICAiaWQiIDogImIxMC0zIiwKICAgICAgICAgICAgInRpbWVPZkRheSIgOiAi
-  ZGF5IgogICAgICAgICB9LAogICAgICAgICB7CiAgICAgICAgICAgICJ1cmwiIDogImh0
-  dHA6Ly9hMS5waG9ib3MuYXBwbGUuY29tL3VzL3IxMDAwLzAwMC9GZWF0dXJlcy9hdHYv
-  QXV0dW1uUmVzb3VyY2VzL3ZpZGVvcy9iOC0xLm1vdiIsCiAgICAgICAgICAgICJhY2Nl
-  c3NpYmlsaXR5TGFiZWwiIDogIkhhd2FpaSIsCiAgICAgICAgICAgICJ0eXBlIiA6ICJ2
-  aWRlbyIsCiAgICAgICAgICAgICJpZCIgOiAiYjgtMSIsCiAgICAgICAgICAgICJ0aW1l
-  T2ZEYXkiIDogIm5pZ2h0IgogICAgICAgICB9CiAgICAgIF0KICAgfQpdCg==
-  </data>
-</dict>
-</plist>' > ~/Library/Preferences/ByHost/com.JohnCoates.Aerial.${byhost_uuid}.plist
-  sudo killall cfprefsd
+function Test-ExecutionPolicy {
+    Write-Host 'test'
+    if((Get-Executionpolicy) -eq 'RemoteSigned') {
+        Write-Host "Relax with 'RemoteSigned' : Set-ExecutionPolicy RemoteSigned -scope CurrentUser"
+    }
 }
 
-certs_generate () {
-  cert_name=$1
-  if [ $# -eq 0 ]; then
-    function_help "${FUNCNAME[0]}" "Requires 1 argument <filename>"
-  else
-    if [[ ${1} != *".pem"* ]];then
-      ## gen_certs - Generates Private Key ${1}.key
-      openssl genrsa -des3 -out ${cert_name}.key 1024
-    else
-      ## gen_certs - OR
-      ## gen_certs - Uses and existing Private Key /path_to/existing.pem
-      cp "${cert_name}" existing.key
-      cert_name=existing
-    fi
+function prompt {
+    # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
+    $origLastExitCode = $LastExitCode
+    Write-VcsStatus
 
-    # OR using existing pem
-    # cp /etc/chef/validation.pem ${domain}.key
-    ## gen_certs - Generates a Certificate Signing Request (CSR) ${1}.csr
-    openssl req -new -key ${cert_name}.key -out ${cert_name}.csr
-    ## gen_certs - Generates a Self-Signed SSL Certificate ${1}.crt
-    openssl x509 -req -days 365 -in ${cert_name}.csr -signkey ${cert_name}.key -out ${cert_name}.crt
-    ## gen_certs - Removes passphrase for munki web admin etc ${1}.app.key
-    openssl rsa -in ${cert_name}.key -out ${cert_name}.app.key
-    ## gen_certs - Generates Public ssh key ${1}.pub
-    ssh-keygen -y -f ${cert_name}.key > ${cert_name}.pub
-  fi
-}
+    if (Test-IsAdmin) {  # if elevated
+        Write-Host "(Elevated) " -NoNewline -ForegroundColor Red
+    }
 
-function install_dockutil() {
-  sudo -v
-  if [ -d /opt/dockutil ]; then
-    pushd /opt/dockutil
-    sudo git fetch
-  else
-    sudo git clone https://github.com/cgerke/dockutil /opt/dockutil
-  fi
+    Write-Host "$env:USERNAME@" -NoNewline -ForegroundColor DarkYellow
+    Write-Host "$env:COMPUTERNAME" -NoNewline -ForegroundColor Magenta
+    Write-Host " : " -NoNewline -ForegroundColor DarkGray
 
-  sudo /usr/bin/readlink /usr/local/bin/dockutil | grep "/opt/dockutil/scripts/dockutil"
-  if [ $? == 0 ]; then
-    sudo ln -s /opt/dockutil/scripts/dockutil /usr/local/bin/dockutil
-  fi
+    $curPath = $ExecutionContext.SessionState.Path.CurrentLocation.Path
+    if ($curPath.ToLower().StartsWith($Home.ToLower()))
+    {
+        $curPath = "~" + $curPath.SubString($Home.Length)
+    }
 
-  sudo chmod -R 755 /opt/dockutil
-  sudo chown -R root:admin /opt/dockutil
-}
-
-function install_drive() {
-  sudo -v
-  if [ ! -x /Applications/Google\ Drive.app ]; then
-    curl -#L -o ~/Downloads/drive.dmg https://dl.google.com/drive/installgoogledrive.dmg
-    hdiutil attach ~/Downloads/drive.dmg
-    sleep 3
-    sudo cp -Rf /Volumes/Install\ Google\ Drive/Google\ Drive.app /Applications/
-    sleep 3
-    hdiutil detach /Volumes/Install\ Google*
-    rm -Rf ~/Downloads/drive.dmg
-  else
-    defaults read /Applications/Google\ Drive.app/Contents/Info.plist CFBundleVersion
-  fi
-}
-
-function centos_ks_hash() {
-  salt=$(/usr/bin/uuidgen)
-  /bin/echo "import crypt,getpass; print crypt.crypt(getpass.getpass(), \"$6${salt}\")" | python -
-}
-
-function centos_iso() {
-  date_string=$(/bin/date +"%Y%m%d%H%M%S")
-  brew list p7zip
-  if [ $? == 0 ]; then
-    iso_dir=~/Desktop/temp-iso
-    mkdir ${iso_dir}
-    cd ${iso_dir}
-    7z x ~/Desktop/CentOS-*.iso
-    chmod u+w ${iso_dir} && chmod u+w ${iso_dir}/isolinux/isolinux.bin
-    curl -o ${iso_dir}/anaconda-ks.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/centos/anaconda-ks.cfg
-    curl -o ${iso_dir}/anaconda-ks-chef.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/centos/anaconda-ks-chef.cfg
-    mv -f ${iso_dir}/isolinux/isolinux.cfg ${iso_dir}/isolinux/isolinux.cfg.bak
-    curl -o ${iso_dir}/isolinux/isolinux.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/centos/isolinux.cfg
-    mkisofs -R \
-    -no-emul-boot -boot-load-size 4 \
-    -boot-info-table -joliet-long \
-    -o ../CentOS_BootStrap.iso \
-    -b isolinux/isolinux.bin \
-    -c isolinux/boot.cat \
-    -V "CentOS_BS" .
-    rm -Rf ${iso_dir}
-    mv ../CentOS_BootStrap.iso ../centos_${date_string}.iso
-  else
-    echo 'brew install p7zip'
-  fi
-}
-
-function ubuntu_iso() {
-  brew list p7zip
-  if [ $? == 0 ]; then
-    iso_dir=~/Desktop/temp-iso
-    mkdir ${iso_dir}
-    cd ${iso_dir}
-    7z x ~/Desktop/Ubuntu-*.iso
-    chmod u+w ${iso_dir} && chmod u+w ${iso_dir}/isolinux/isolinux.bin
-    mv -f ${iso_dir}/ks.cfg ${iso_dir}/ks.cfg.bak
-    curl -o ${iso_dir}/-ks.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/ubuntu/ks.cfg
-    mv -f ${iso_dir}/isolinux/txt.cfg ${iso_dir}/isolinux/txt.cfg.bak
-    curl -o ${iso_dir}/isolinux/txt.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/ubuntu/txt.cfg
-    mv -f ${iso_dir}/isolinux/isolinux.cfg ${iso_dir}/isolinux/isolinux.cfg.bak
-    curl -o ${iso_dir}/isolinux/isolinux.cfg https://raw.githubusercontent.com/cgerke/bootstrap/master/ubuntu/isolinux.cfg
-    mkisofs -R \
-    -no-emul-boot -boot-load-size 4 \
-    -boot-info-table -joliet-long \
-    -o ../Ubuntu_Bootstrap.iso \
-    -b isolinux/isolinux.bin \
-    -c isolinux/boot.cat \
-    -V "Ubuntu_BS" .
-    rm -Rf ${iso_dir}
-  else
-    echo 'brew install p7zip'
-  fi
-}
-
-function configure_kickstart() {
-  sudo readlink /usr/local/bin/kickstart | grep "/usr/local/bin/kickstart"
-  if [ $? == 0 ]; then
-    sudo ln -s /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart /usr/local/bin/kickstart
-  fi
-  /usr/bin/pgrep -f 'Remote Desktop.app' || /usr/local/bin/kickstart -activate -configure -allowAccessFor -allUsers -access -on -privs -all -clientopts -setvnclegacy -vnclegacy yes -restart -agent
-}
-
-function install_mcxtoprofile() {
-  sudo -v
-  if [ -d /opt/mcxtoprofile ]; then
-    pushd /opt/mcxtoprofile
-    sudo git fetch
-  else
-    sudo git clone https://github.com/cgerke/mcxtoprofile /opt/mcxtoprofile
-  fi
-  sudo readlink /usr/local/bin/mcxtoprofile | grep "/opt/mcxToProfile/mcxToProfile.py"
-  if [ $? == 0 ]; then
-    sudo ln -s /opt/mcxtoprofile/mcxtoprofile.py /usr/local/bin/mcxtoprofile
-  fi
-  sudo chmod -R 755 /opt/mcxtoprofile
-  sudo chown -R root:admin /opt/mcxtoprofile
-}
-
-function outset_install() {
-  sudo -v
-  git clone https://github.com/cgerke/outset.git ~/Downloads/outset
-  pushd ~/Downloads/outset; /usr/bin/make pkg
-  sudo /usr/sbin/installer -pkg ~/Downloads/outset/outset* -target /
-}
-
-function prefs() {
-  sudo -v
-
-  build=$(/usr/bin/sw_vers -buildVersion)
-  byhost_uuid=$(/usr/sbin/system_profiler SPHardwareDataType | grep "Hardware UUID" | cut -c22-57)
-  device_model=$(/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice | grep -E model | awk '{print $3}' | sed 's/\<\"//' | sed 's/\"\>//')
-  device_ram=$(/usr/sbin/system_profiler SPHardwareDataType | grep "Memory" | awk '{print $2$3}')
-  device_cpu=$(/usr/sbin/system_profiler SPHardwareDataType | grep "Processor Name" | awk '{print $3$4$5$6$7$8$9}')
-  device_serial=$(ioreg -l | grep IOPlatformSerialNumber | awk '{print $4}' | cut -d \" -f 2)
-  lastUserName=$(defaults read /Library/Preferences/com.apple.loginwindow.plist lastUserName)
-  macaddr=$(/usr/sbin/networksetup -getMACADDRESS en1 | awk '{print $3}' | sed s/://g)
-  version=$(/usr/bin/sw_vers -productVersion)
-
-  sudo defaults write /Library/Preferences/com.apple.RemoteDesktop.plist Text1 "${device_model}"
-  sudo defaults write /Library/Preferences/com.apple.RemoteDesktop.plist Text2 "${device_serial}"
-  sudo defaults write /Library/Preferences/com.apple.RemoteDesktop.plist Text3 "CPU: ${device_cpu} RAM: ${device_ram}"
-  sudo defaults write /Library/Preferences/com.apple.RemoteDesktop.plist Text4 "Last User: ${lastUserName}"
-
-  #sudo softwareupdate --set-catalog http://server.private:8088/index-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticCheckEnabled -bool true
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist AutomaticDownload -bool true
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist ConfigDataInstall -bool true
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate.plist CriticalUpdateInstall -bool true
-
-  #defaults write com.apple.SoftwareUpdate ScheduleFrequency -int 1
-
-  sudo spctl --master-disable
-  sudo defaults write /Library/Preferences/com.apple.security.plist GKAutoRearm -bool false
-  sudo defaults write /Library/Preferences/com.apple.security.plist SecItemSynchronizable -bool false
-
-  sudo pmset -a autopoweroffdelay 5400
-  sudo pmset -a autorestart 1
-  sudo pmset -a disksleep 1
-  sudo pmset -a displaysleep 30
-  sudo pmset -a sleep 120
-  sudo pmset -a standbydelay 4200
-  sudo pmset -a womp 1
-  sudo pmset -b displaysleep 30
-  sudo pmset -b disksleep 0
-  sudo pmset -b sleep 60
-
-  sudo defaults write /Library/Preferences/com.apple.loginwindow.plist AdminHostInfo -string DSStatus
-  sudo defaults write /Library/Preferences/com.apple.loginwindow.plist GuestEnabled -bool false
-  sudo defaults write /Library/Preferences/com.apple.loginwindow.plist Hide500Users -bool true
-  sudo defaults write /Library/Preferences/com.apple.loginwindow.plist LoginwindowText "Mac OSX $version | $build | $device_model | $device_serial | en1 $macaddr  Unauthorised access is prohibited."
-  # sudo defaults write /Library/Preferences/com.apple.loginwindow.plist HiddenUsersList -array-add "${1}"
-  sudo defaults write /Library/Preferences/com.apple.loginwindow.plist SHOWFULLNAME -bool false
-  # sudo defaults write /Library/Preferences/com.apple.loginwindow.plist autoLoginUser -string "${1}"
-
-  sudo /bin/launchctl unload /System/Library/LaunchDaemons/com.apple.locationd.plist
-  sudo defaults write /var/db/locationd/Library/Preferences/ByHost/com.apple.locationd.$byhost_uuid LocationServicesEnabled -int 1
-  sudo chown -R _locationd:_locationd /var/db/locationd
-  sudo /bin/launchctl load /System/Library/LaunchDaemons/com.apple.locationd.plist
-
-  #sudo defaults write /Library/Preferences/com.apple.screensaver loginWindowIdleTime 300
-  #sudo defaults write /Library/Preferences/com.apple.screensaver loginWindowModulePath "/System/Library/Frameworks/ScreenSaver.framework/Resources/Computer Name.saver"
-
-  defaults write -g AppleEnableMenuBarTransparency -bool false
-  defaults write -g AppleKeyboardUIMode -int 2
-  defaults write -g AppleLanguages -array en
-  defaults write -g AppleLocale -string "en_AU@currency=AUD"
-  defaults write -g AppleMeasurementUnits -string Centimeters
-  defaults write -g AppleMetricUnits -bool true
-  defaults write -g AppleMiniaturizeOnDoubleClick -bool true
-  defaults write -g AppleShowAllExtensions -bool true
-  defaults write -g AppleShowScrollBars -string Always
-  defaults write -g NSAutomaticDashSubstitutionEnabled -bool false
-  defaults write -g NSAutomaticQuoteSubstitutionEnabled -bool false
-  defaults write -g NSAutomaticWindowAnimationsEnabled -bool false
-  defaults write -g NSBrowserColumnAnimationSpeedMultiplier -float 0
-  defaults write -g NSDocumentRevisionsWindowTransformAnimation -bool false
-  defaults write -g NSDocumentSaveNewDocumentsToCloud -bool false
-  defaults write -g NSNavPanelExpandedStateForSaveMode -bool true
-  defaults write -g NSNavPanelExpandedStateForSaveMode2 -bool true
-  defaults write -g NSScrollAnimationEnabled -bool false
-  defaults write -g NSScrollViewRubberbanding -bool false
-  defaults write -g NSToolbarFullScreenAnimationDuration -float 0
-  defaults write -g NSWindowResizeTime -float 0.001
-  defaults write -g PMPrintingExpandedStateForPrint -bool true
-  defaults write -g PMPrintingExpandedStateForPrint2 -bool true
-  defaults write -g QLPanelAnimationDuration -float 0
-  defaults write -g AppleAquaColorVariant -int 6
-  defaults write -g AppleHighlightColor -string "0.500000 0.500000 0.500000"
-  defaults write -g com.apple.keyboard.fnState -bool true
-  defaults write -g com.apple.trackpad.forceClick -bool true
-  defaults write -g userMenuExtraStyle -int 1
-
-  defaults write com.apple.ActivityMonitor ShowCategory -int 0
-
-  defaults write com.apple.DiskUtility DUDebugMenuEnabled -bool true
-  defaults write com.apple.DiskUtility advanced-image-options -bool true
-
-  defaults write com.apple.Mail DisableSendAnimations -bool true
-  defaults write com.apple.Mail DisableReplyAnimations -bool true
-
-  defaults write com.apple.Safari AutoOpenSafeDownloads -bool false
-  defaults write com.apple.Safari HomePage -string "about:blank"
-  defaults write com.apple.Safari IncludeInternalDebugMenu -bool true
-  defaults write com.apple.Safari IncludeDevelopMenu -bool true
-  defaults write com.apple.Safari SuppressSearchSuggestions -bool true
-  defaults write com.apple.Safari UniversalSearchEnabled -bool false
-  defaults write com.apple.Safari WebKitDeveloperExtrasEnabledPreferenceKey -bool true
-  defaults write com.apple.Safari com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled -bool true
-
-  defaults write com.apple.dock ResetLaunchPad -bool true
-  defaults write com.apple.dock autohide-time-modifier -float 0
-  defaults write com.apple.dock autohide-delay -float 0
-  defaults write com.apple.dock expose-animation-duration -float 0
-  defaults write com.apple.dock mineffect -string scale
-  defaults write com.apple.dock orientation -string right
-  defaults delete com.apple.dock persistent-apps
-  defaults write com.apple.dock persistent-apps -array
-  defaults write com.apple.dock springboard-show-duration -float 0
-  defaults write com.apple.dock springboard-hide-duration -float 0
-  defaults write com.apple.dock springboard-page-duration -float 0
-  /usr/local/bin/dockutil --add /Applications/Launchpad.app --no-restart
-  /usr/local/bin/dockutil --add /Applications/Utilities/Console.app --no-restart
-  /usr/local/bin/dockutil --add /Applications/Utilities/Terminal.app --no-restart
-  /usr/local/bin/dockutil --remove 'Mail' --no-restart
-  /usr/local/bin/dockutil --remove 'Contacts' --no-restart
-  /usr/local/bin/dockutil --remove 'Calendar' --no-restart
-  /usr/local/bin/dockutil --remove 'Notes' --no-restart
-  /usr/local/bin/dockutil --remove 'Reminders' --no-restart
-  /usr/local/bin/dockutil --remove 'Maps' --no-restart
-  /usr/local/bin/dockutil --remove 'Photos' --no-restart
-  /usr/local/bin/dockutil --remove 'Messages' --no-restart
-  /usr/local/bin/dockutil --remove 'Facetime' --no-restart
-  /usr/local/bin/dockutil --remove 'iTunes' --no-restart
-  /usr/local/bin/dockutil --remove 'iBooks' --no-restart
-  /usr/local/bin/dockutil --remove 'AppStore'
-
-  defaults write com.apple.frameworks.diskimages skip-verify -bool true
-  defaults write com.apple.frameworks.diskimages skip-verify-locked -bool true
-  defaults write com.apple.frameworks.diskimages skip-verify-remote -bool true
-
-  defaults write com.apple.finder _FXShowPosixPathInTitle -bool true
-  defaults write com.apple.finder DisableAllAnimations -bool true
-  defaults write com.apple.finder FXdefaultsearchScope -string SCcf
-  defaults write com.apple.finder FXPreferredViewStyle -string Nlsv
-  defaults write com.apple.finder GoToField -string '~/Library'
-  defaults write com.apple.finder NewWindowTarget -string PfHm
-  defaults write com.apple.finder ShowExternalHardDrivesOnDesktop -bool true
-  defaults write com.apple.finder ShowHardDrivesOnDesktop -bool false
-  defaults write com.apple.finder ShowMountedServersOnDesktop -bool true
-  defaults write com.apple.finder ShowPathbar -bool true
-  defaults write com.apple.finder ShowPreviewPane -bool false
-  defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool true
-  defaults write com.apple.finder ShowStatusBar -bool true
-
-  defaults write com.apple.networkConnect VPNShowStatus -bool true
-  defaults write com.apple.networkConnect VPNShowTime -bool true
-
-  defaults write com.apple.screensaver askForPassword -int 1
-  defaults write com.apple.screensaver askForPasswordDelay -float 0
-
-  defaults -currentHost write com.apple.screensaver idleTime -int 3600
-  defaults -currentHost write com.apple.screensaver CleanExit -string YES
-  defaults -currentHost write com.apple.screensaver PrefsVersion -int 100
-  defaults -currentHost read com.apple.screensaver moduleDict -dict moduleName "Computer Name" path "/System/Library/Frameworks/ScreenSaver.framework/Resources/Computer Name.saver" type 0
-  defaults -currentHost write com.apple.screensaver.Basic MESSAGE -string "Cloudy with a chance of meatballs."
-  defaults -currentHost read com.apple.ScreenSaver.iLifeSlideShows styleKey -string "Classic"
-  defaults -currentHost write com.apple.ScreenSaverPhotoChooser CustomFolderDict -dict identifier "Default Collections" name "/Library/Screen Savers/Default Collections"
-  defaults -currentHost write com.apple.ScreenSaverPhotoChooser LastViewedPhotoPath "/Library/Screen Savers/Default Collections"
-  defaults -currentHost read com.apple.ScreenSaverPhotoChooser SelectedFolderPath "/Library/Screen Savers/Default Collections"
-  defaults -currentHost read com.apple.ScreenSaverPhotoChooser SelectedSource -int 4
-  defaults -currentHost write com.apple.ScreenSaverPhotoChooser ShufflesPhotos -bool False
-
-  defaults write com.apple.TimeMachine DoNotOfferNewDisksForBackup -bool true
-
-  # Trackpad. Grrr why ~/Library/Preferences/ByHost/.Global....
-  defaults -currentHost write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.enableSecondaryClick -int 1
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.fiveFingerPinchSwipeGesture -int 2
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.fourFingerPinchSwipeGesture -int 2
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.fourFingerVertSwipeGesture -int 2
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.threeFingerDragGesture -int 0
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.threeFingerVertSwipeGesture -int 2
-  defaults -currentHost write NSGlobalDomain com.apple.trackpad.trackpadCornerClickBehavior -int 0
-
-  # Trackpad
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadFiveFingerPinchGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadFourFingerHorizSwipeGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadFourFingerPinchGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadFourFingerVertSwipeGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadHandResting -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadHorizScroll -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadMomentumScroll -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadPinch -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadRightClick -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadRotate -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadScroll -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerDrag -int 0
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerHorizSwipeGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerTapGesture -int 0
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture -int 2
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadTwoFingerDoubleTapGesture -int 1
-  defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadTwoFingerFromRightEdgeSwipeGesture -int 3
-
-  #defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 160 '{enabled=1;value={parameters=(100, 2, 524288);type="standard";};}'
-
-  defaults -currentHost delete com.apple.systemuiserver dontAutoLoad
-  defaults -currentHost write com.apple.systemuiserver dontAutoLoad -array -string "/System/Library/CoreServices/Menu Extras/TimeMachine.menu"
-  defaults -currentHost write com.apple.systemuiserver dontAutoLoad -array-add -string "/System/Library/CoreServices/Menu Extras/User.menu"
-  defaults delete com.apple.systemuiserver menuExtras
-  defaults write com.apple.systemuiserver menuExtras -array -string "/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/Volume.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/BlueTooth.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/Displays.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/VPN.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/AirPort.menu"
-  defaults write com.apple.systemuiserver menuExtras -array-add -string "/System/Library/CoreServices/Menu Extras/Battery.menu"
-
-  defaults write com.apple.universalaccess reduceTransparency -bool true
-
-  killall Dock
-  killall Finder
-  killall SystemUIServer
-}
-
-function prefs_autoproxy() {
-  cert_name=$1
-  if [ $# -eq 0 ]; then
-    function_help "${FUNCNAME[0]}" "Requires 1 argument <proxyurl>"
-  else
-    sudo -v
-    IFS=$'\n'
-    for i in $(/usr/sbin/networksetup -listallnetworkservices | /usr/bin/tail +2);
-    do
-        current_url=$(/usr/sbin/networksetup -getautoproxyurl "$i" | /usr/bin/head -1 | /usr/bin/cut -c 6-)
-        if [[ $current_url != $1 ]]; then
-            sudo /usr/sbin/networksetup -setautoproxyurl $i $1
-            sudo /usr/sbin/networksetup -setautoproxystate "$i" on
-        fi
-    done
-    unset IFS
-  fi
-}
-
-function knf() {
-  ## knf -a cookbooks and roles
-  ## knf -c cookbooks only
-  ## knf -f facebook IT CPE
-  if [ $# -eq 0 ]; then
-    function_help "${FUNCNAME[0]}" "Requires 1 argument [a|c|f]"
-  else
-    case $1 in
-      a|-a)
-        /usr/local/bin/knife cookbook upload --all; knife role from file roles/*.rb;
-      ;;
-      c|-c)
-        /usr/local/bin/knife cookbook upload --all;
-      ;;
-      f|-f)
-        /usr/local/bin/knife cookbook upload cpe_profiles;
-        /usr/local/bin/knife cookbook upload cpe_utils;
-        /usr/local/bin/knife cookbook upload cpe_user_customizations;
-        #/usr/local/bin/knife cookbook upload cpe_node_customizations;
-        /usr/local/bin/knife cookbook upload cpe_bluetooth;
-        /usr/local/bin/knife cookbook upload cpe_hosts;
-        /usr/local/bin/knife cookbook upload cpe_launchd;
-        #/usr/local/bin/knife cookbook upload cpe_munki;
-        /usr/local/bin/knife cookbook upload cpe_pathsd;
-        /usr/local/bin/knife cookbook upload cpe_powermanagement;
-        /usr/local/bin/knife cookbook upload cpe_prompt_user;
-        /usr/local/bin/knife cookbook upload cpe_safari;
-        /usr/local/bin/knife cookbook upload cpe_screensaver;
-        /usr/local/bin/knife cookbook upload cpe_desktop;
-        /usr/local/bin/knife cookbook upload cpe_init;
-
-      ;;
-    esac
-  fi
+    Write-Host $curPath -NoNewline -ForegroundColor Blue
+    Write-Host " : " -NoNewline -ForegroundColor DarkGray
+    #Write-Host (Get-Date -Format G) -NoNewline -ForegroundColor DarkMagenta
+    $LastExitCode = $origLastExitCode
+    "`n$('PS >' * ($nestedPromptLevel + 1)) "
 }

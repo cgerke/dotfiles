@@ -1,4 +1,3 @@
-" Chef managed
 syntax enable
 colo colors
 set autoindent

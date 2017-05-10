@@ -1,9 +1,20 @@
 "*":
+  "activate-power-mode":
+    particles:
+      spawnCount:
+        max: 5
+        min: 2
+      totalCount:
+        max: 25
+    screenShake:
+      enabled: false
   core:
     projectHome: "/Users/cgerke/Google Drive/code"
   editor:
     fontSize: 12
-  "exception-reporting":
-    userId: "30d789c8-a0ba-12a4-e7db-246782993000"
+    showInvisibles: true
+  linter:
+    showErrorTabLine: true
+  "travis-ci-status": {}
   welcome:
     showOnStartup: false

@@ -1,22 +1,36 @@
-If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] “Administrator”))
-{
-    Write-Warning “You are not running with Administrator rights!”
-    Write-Host ""
-    Get-ExecutionPolicy
-    Write-Host $profile
-} else {
-    $Host.UI.RawUI.ForegroundColor = "Red"
-    Set-ExecutionPolicy RemoteSigned
-}
+# Execution Policy
+# Play with this an alternative methods
+Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy UnRestricted
 
+# Load Helpers
 Push-Location (Split-Path -parent $profile)
 "functions","aliases" | Where-Object {Test-Path "$_.ps1"} | ForEach-Object -process {Invoke-Expression ". .\$_.ps1"}
 Pop-Location
 
-# Git
-If ($PSVersionTable.PSVersion.Major -gt 2) { 
-    . (Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1")
-    . $env:github_posh_git\profile.example.ps1
+# Bypassing Execution Policy
+# powershell.exe -ExecutionPolicy Bypass -File .runme.ps1
+# -or-
+# Get-Content .runme.ps1 | powershell.exe -noprofile -
+# -or-
+# powershell.exe -command "Write-Host 'My voice is my passport, verify me.'"
+
+# Colour
+Set-UI
+
+# Environment
+if (Test-IsAdmin){
+    # Elevated console
+    #Set-ExecutionPolicy RemoteSigned
+    Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy UnRestricted
+} else {
+    # Current user console
+    # Git environment
+    if (Test-Git){
+        Import-Module posh-git
+    }
 }
-$GitPath = Get-ChildItem -Recurse -Force "C:\Users\cgerke\AppData\Local\GitHub" -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $true) -and  ( $_.Name -like "*cmd*") } | % { $_.fullname }
-$env:Path += ";$GitPath"
+
+# Everyone
+Write-Host "Execution Policy: " (Get-ExecutionPolicy)
+Write-Host "Profile : " $profile
+Write-Host " "

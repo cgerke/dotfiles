@@ -1,12 +1,10 @@
 [user]
-	email = 
-	name =
+	email = chris.gerke@gmail.com
+	name = Chris Gerke
 
 [alias]
 
-	# Use ssh instead of https on the cli
-	# git remote set-url origin git@github.com:cgerke/yourrepo.git
-
+	branches = "!git branch -a"
 	branch-name = "!git rev-parse --abbrev-ref HEAD"
 	branch-push = "!git push -u origin $(git branch-name)"
 	branch-push-undo = "!git push origin :$(git branch-name)"
@@ -21,11 +19,16 @@
 	log-summary = log --pretty=oneline --graph --abbrev-commit --decorate
 	log-detail = log --pretty=oneline --graph --abbrev-commit --decorate --numstat
 
+	remotes = "!git remote -v"
+	remote-info = "!git remote show origin"
+
 	# Reset master to match upstream losing any local changes
 	# Requires upstream
 	# git remote add upstream <URL>
 	reset-master-to-upstream = !git fetch upstream && git checkout master && git reset --hard upstream/master
 	# git push origin mater --force
+
+	source-controlled-files = !git ls-files
 
 	# git remote add upstream <URL>
 	sync-branch-to-master = !git rebase master
@@ -40,11 +43,5 @@
 
 [core]
 	excludesfile = /Users/cgerke/.gitignore_global
-[difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path =
-[mergetool "sourcetree"]
-	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-	trustExitCode = true
 [commit]
-	template = /Users/cgerke/.stCommitMsg
+	template = /Users/cgerke/.gitmessage

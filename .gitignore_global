@@ -11,6 +11,7 @@
 *.pub
 .chef
 id_rsa
+kcpassword
 nodes
 sasl_passwd
 settings.py
