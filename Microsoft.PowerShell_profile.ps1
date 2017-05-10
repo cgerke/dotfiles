@@ -4,7 +4,9 @@ Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy UnRestricted
 
 # Load Helpers
 Push-Location (Split-Path -parent $profile)
-"functions","aliases" | Where-Object {Test-Path "$_.ps1"} | ForEach-Object -process {Invoke-Expression ". .\$_.ps1"}
+"functions","aliases" | Where-Object {Test-Path "*_$_.ps1"} | ForEach-Object -process {
+    Write-Host *_$_.pst1; Invoke-Expression ". .\*_$_.ps1"
+}
 Pop-Location
 
 # Bypassing Execution Policy
@@ -14,11 +16,14 @@ Pop-Location
 # -or-
 # powershell.exe -command "Write-Host 'My voice is my passport, verify me.'"
 
-# Colour
-Set-Git
+# Environment
 Set-UI
 
-# Environment
+# Helpers
+Set-AD
+Set-Git
+
+# Elevated
 if (Test-IsAdmin){
     Write-Host "Administrator"
 }
