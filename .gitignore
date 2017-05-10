@@ -1,2 +1,7 @@
-!.chef
-!public.pub
+/*
+.DS_Store
+!.gitignore
+!.rubocop.yml
+!.travis.yml
+!Gemfile
+!README.md
