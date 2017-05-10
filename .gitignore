@@ -5,3 +5,8 @@
 !.travis.yml
 !Gemfile
 !README.md
+!.atom
+.chef
+!.services
+!.ssh
+!.vim
