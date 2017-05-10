@@ -15,22 +15,14 @@ Pop-Location
 # powershell.exe -command "Write-Host 'My voice is my passport, verify me.'"
 
 # Colour
+Set-Git
 Set-UI
 
 # Environment
 if (Test-IsAdmin){
-    # Elevated console
-    #Set-ExecutionPolicy RemoteSigned
-    Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy UnRestricted
-} else {
-    # Current user console
-    # Git environment
-    if (Test-Git){
-        Import-Module posh-git
-    }
+    Write-Host "Administrator"
 }
 
 # Everyone
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
 Write-Host "Profile : " $profile
-Write-Host " "

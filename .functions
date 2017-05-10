@@ -1,15 +1,24 @@
 function script:Append-Path([string] $path ) {
    if ( -not [string]::IsNullOrEmpty($path) ) {
       if ( (test-path $path) -and (-not $env:PATH.contains($path)) ) {
-         $env:PATH += ';' + $path
+          Write-Host "Appending Path" $path
+         $env:PATH += ';' + "$path"
       }
    }
 }
 
-function Test-Git {
+function Reload-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
+}
+
+function Set-Git {
     try {
         $git = (git --version)
         Write-Host $git
+        Import-Module posh-git
+        Append-Path((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
     } catch {
         Write-Host "Git not found, will install."
         # Install git using PowerShellGet (-gt PS2)
@@ -17,6 +26,7 @@ function Test-Git {
             PowerShellGet\Install-Module posh-git -Scope CurrentUser
             Update-Module posh-git
         } else {
+            # Install git using chocolatey (-gt PS2) but I don't like this so warn...
             Write-Host "PowerShellGet requires PS3 or higher to install git."
             #choco install poshgit (-lt PS3)
         }
@@ -43,12 +53,6 @@ function Test-Git {
 #     $GitPath = Get-ChildItem -Recurse -Force "$HOME\AppData\Local\GitHub" -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $true) -and  ( $_.Name -like "*cmd*") } | % { $_.fullname }
 #     $env:Path += ";$GitPath"
 # }
-
-function Reload-Powershell {
-    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-    [System.Diagnostics.Process]::Start($newProcess);
-    exit
-}
 
 function Set-UI {
     # $Host.UI.RawUI.WindowTitle = "Elevated"
@@ -77,6 +81,12 @@ function Sudo-PowerShell {
     }
 }
 
+function Test-ExecutionPolicy {
+    if((Get-Executionpolicy) -eq 'RemoteSigned') {
+        Write-Host "Relax with 'RemoteSigned' : Set-ExecutionPolicy RemoteSigned -scope CurrentUser"
+    }
+}
+
 function Test-IsAdmin {
     try {
         $identity = [Security.Principal.WindowsIdentity]::GetCurrent();
@@ -97,35 +107,20 @@ function Test-IsAdmin {
     #>
 }
 
-function Test-ExecutionPolicy {
-    Write-Host 'test'
-    if((Get-Executionpolicy) -eq 'RemoteSigned') {
-        Write-Host "Relax with 'RemoteSigned' : Set-ExecutionPolicy RemoteSigned -scope CurrentUser"
-    }
-}
-
 function prompt {
     # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
     $origLastExitCode = $LastExitCode
-    Write-VcsStatus
-
+    
     if (Test-IsAdmin) {  # if elevated
-        Write-Host "(Elevated) " -NoNewline -ForegroundColor Red
+        Write-Host "(Elevated $env:USERNAME ) " -NoNewline -ForegroundColor Red
+    } else {
+        Write-Host "$env:USERNAME " -NoNewline -ForegroundColor DarkYellow
     }
 
-    Write-Host "$env:USERNAME@" -NoNewline -ForegroundColor DarkYellow
-    Write-Host "$env:COMPUTERNAME" -NoNewline -ForegroundColor Magenta
-    Write-Host " : " -NoNewline -ForegroundColor DarkGray
-
-    $curPath = $ExecutionContext.SessionState.Path.CurrentLocation.Path
-    if ($curPath.ToLower().StartsWith($Home.ToLower()))
-    {
-        $curPath = "~" + $curPath.SubString($Home.Length)
-    }
-
-    Write-Host $curPath -NoNewline -ForegroundColor Blue
-    Write-Host " : " -NoNewline -ForegroundColor DarkGray
-    #Write-Host (Get-Date -Format G) -NoNewline -ForegroundColor DarkMagenta
+    Write-Host "$env:COMPUTERNAME" -NoNewline -ForegroundColor Cyan
+    Write-Host " " $ExecutionContext.SessionState.Path.CurrentLocation.Path -ForegroundColor Blue
     $LastExitCode = $origLastExitCode
-    "`n$('PS >' * ($nestedPromptLevel + 1)) "
+    "`n$('PS >') "
+
+    Write-VcsStatus
 }
