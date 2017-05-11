@@ -31,3 +31,7 @@ Copy-Item -Path ./Microsoft.PowerShell_*.ps1 -Destination $profileDir
 # Git
 Write-Host "Copying ./.gitconfig to " $env:USERPROFILE
 Copy-Item -Path ./.gitconfig -Destination $env:USERPROFILE
+Write-Host "Copying ./.gitignore_global to " $env:USERPROFILE
+Copy-Item -Path ./.gitignore_global -Destination $env:USERPROFILE
+Write-Host "Copying ./.gitmessage to " $env:USERPROFILE
+Copy-Item -Path ./.gitmessage -Destination $env:USERPROFILE

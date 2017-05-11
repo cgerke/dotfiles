@@ -21,6 +21,6 @@
 !.gitmessage
 !.vimrc
 !.lucario.terminal
-!.Microsoft.PowerShell_aliases.ps1
-!.Microsoft.PowerShell_functions.ps1
-!.Microsoft.PowerShell_profile.ps1
+!Microsoft.PowerShell_aliases.ps1
+!Microsoft.PowerShell_functions.ps1
+!Microsoft.PowerShell_profile.ps1

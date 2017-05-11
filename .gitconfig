@@ -42,6 +42,6 @@
 	sync-master-to-upstream = !git checkout master && git fetch upstream && git pull upstream master
 
 [core]
-	excludesfile = /Users/cgerke/.gitignore_global
+	excludesfile = ~/.gitignore_global
 [commit]
-	template = /Users/cgerke/.gitmessage
+	template = ~/.gitmessage
