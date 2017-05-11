@@ -26,16 +26,6 @@ function Reload-Powershell {
     exit
 }
 
-
-# function Set-GitHub {
-#     If ($PSVersionTable.PSVersion.Major -gt 2) { 
-#         . (Resolve-Path "$env:LOCALAPPDATA\GitHub\shell.ps1")
-#         . $env:github_posh_git\profile.example.ps1
-#     }
-#     $GitPath = Get-ChildItem -Recurse -Force "$HOME\AppData\Local\GitHub" -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $true) -and  ( $_.Name -like "*cmd*") } | % { $_.fullname }
-#     $env:Path += ";$GitPath"
-# }
-
 function Sudo-PowerShell {
     if ($args.Length -eq 1) {
         start-process $args[0] -verb "runAs"
