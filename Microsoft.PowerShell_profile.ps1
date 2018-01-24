@@ -1,9 +1,3 @@
-# Execution Policy - play with alternatives
-# powershell.exe -ExecutionPolicy Bypass -File .runme.ps1
-# powershell.exe -command "Write-Host 'My voice is my passport, verify me.'"
-# Get-Content .runme.ps1 | powershell.exe -noprofile -
-Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy UnRestricted
-
 # Debug
 $DebugPreference = "SilentlyContinue"
 
