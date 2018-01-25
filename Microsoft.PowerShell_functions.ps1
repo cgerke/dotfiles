@@ -119,6 +119,8 @@ function script:Append-Path([string] $path ) {
  }
  
  function Setup-SSH {
+     # Test pipe
+     #Get-WindowsCapability -Online | ? Name -like 'OpenSSH*' | Add-WindowsCapability -Online
      Get-WindowsCapability -Online | ? Name -like 'OpenSSH*'
  
      # Install the OpenSSH Client
