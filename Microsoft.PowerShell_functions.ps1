@@ -50,6 +50,12 @@ function script:Append-Path([string] $path ) {
      [System.Diagnostics.Process]::Start($newProcess);
      exit
  }
+
+ function Get-FilePathLength($path) {
+    (Get-Childitem -LiteralPath $path -Recurse) | 
+    Where {$_.FullName.length -ge 248 } |
+    Format-Table -Wrap @{Label='Path length';Expression={$_.FullName.length}}, FullName
+ }
  
  function Get-WIFI($SSID) {
      (netsh wlan show profiles)
