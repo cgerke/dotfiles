@@ -3,7 +3,7 @@ $DebugPreference = "SilentlyContinue"
 
 # Load Helpers
 Push-Location (Split-Path -parent $profile)
-"functions","aliases" | Where-Object {Test-Path "*_$_.ps1"} | ForEach-Object -process {
+"functions","aliases","organisation" | Where-Object {Test-Path "*_$_.ps1"} | ForEach-Object -process {
     Write-Host *_$_.pst1; Invoke-Expression ". .\*_$_.ps1"
 }
 Pop-Location
