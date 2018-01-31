@@ -237,7 +237,6 @@ function script:Append-Path([string] $path ) {
          return $false
      }
  }
- Set-Alias laps Get-Laps
  
  function prompt {
      # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
