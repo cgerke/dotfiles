@@ -215,6 +215,15 @@ function Load-AD{
     }
 } 
 
+<# Implicit Remoting
+Use tools without installing or modifying the local workstation by
+importing a session from a host that has them. Needs testing.
+#>
+function Get-ImplicitModule($endpoint, $module) {
+    $endpointsession=New-PSSession -ComputerName $endpoint
+    Import-PSSession -Session $endpointsession -Module $module
+}
+
 <# HUD #>
 # Git https://github.com/dahlbyk/posh-git
 if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
