@@ -28,6 +28,21 @@
 # $Host.PrivateData.ProgressBackgroundColor = $bckgrnd
 # Clear-Host
 
+function Load-AD{
+    # https://technet.microsoft.com/en-us/library/ee617234.aspx
+    try {
+        if(Get-Module -list activedirectory){
+            if (Get-PSVersion){
+                Import-Module ActiveDirectory
+            }
+        } else {
+            Write-Host "Cannot Import Active Directory Module without RSAT Tools"
+        }
+    } catch {
+        Write-Host "Cannot Import Active Directory Module"
+    }
+} 
+
 function Test-DA {
     Write-Host "----------------------------------"
     Write-Host "Check IPv6 enabled Interfaces ===>"

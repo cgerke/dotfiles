@@ -7,7 +7,7 @@ $DebugPreference = "SilentlyContinue"
 function Append-Path([string] $path ) {
     if ( -not [string]::IsNullOrEmpty($path) ) {
        if ( (Test-Path $path) -and (-not $env:PATH.contains($path)) ) {
-           Write-Host "Appending Path" $path
+           Write-Host "Appending Path" $path -ForegroundColor Cyan
           $env:PATH += ';' + "$path"
        }
     }
@@ -199,22 +199,6 @@ if($Modules -ne $null) {
     Set-PSReadlineOption -EditMode Emacs
 }
 
-<# Manually loading modules. Legacy to be removed. #>
-function Load-AD{
-    # https://technet.microsoft.com/en-us/library/ee617234.aspx
-    try {
-        if(Get-Module -list activedirectory){
-            if (Get-PSVersion){
-                Import-Module ActiveDirectory
-            }
-        } else {
-            Write-Host "Cannot Import Active Directory Module without RSAT Tools"
-        }
-    } catch {
-        Write-Host "Cannot Import Active Directory Module"
-    }
-} 
-
 <# Implicit Remoting
 Use tools without installing or modifying the local workstation by
 importing a session from a host that has them. Needs testing.
@@ -225,10 +209,7 @@ function Get-ImplicitModule($endpoint, $module) {
 }
 
 <# HUD #>
-# Git https://github.com/dahlbyk/posh-git
-if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
-    Write-Host (git --version); Append-Path((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
-}
+
 
 # Profile
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
@@ -238,16 +219,23 @@ Write-Host "Profile : " $profile
 function prompt {
     # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
     $origLastExitCode = $LastExitCode
-    
+
+    if (Get-GitStatus){
+        if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
+            Write-Host (git --version) -ForegroundColor Cyan
+            Append-Path((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
+        }
+    }
+
     if (Test-IsAdmin) {  # if elevated
         Write-Host "(Elevated $env:USERNAME ) " -NoNewline -ForegroundColor Red
     } else {
-        Write-Host "$env:USERNAME " -NoNewline -ForegroundColor Red
+        Write-Host "$env:USERNAME " -NoNewline
     }
 
-    Write-Host "$env:COMPUTERNAME" -NoNewline -ForegroundColor Cyan
-    Write-Host "" $ExecutionContext.SessionState.Path.CurrentLocation.Path -ForegroundColor Yellow
-    $LastExitCode = $origLastExitCode
-    "`n$('PS >') "
+    Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor Magenta
+    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Yellow -NoNewline
     Write-VcsStatus
+    $LASTEXITCODE = $origLastExitCode
+    "`n$('PS>' * ($nestedPromptLevel + 1)) "
 }
