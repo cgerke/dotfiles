@@ -1,47 +1,315 @@
-# https://blogs.technet.microsoft.com/heyscriptingguy/2012/05/21/understanding-the-six-powershell-profiles/
+<# these should be modules dude, write em! #>
 
-# Execution Policy - play with alternatives
-## Set-Executionpolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-# powershell.exe -ExecutionPolicy Bypass -File .runme.ps1
-# powershell.exe -command "Write-Host 'My voice is my passport, verify me.'"
-# Get-Content .runme.ps1 | powershell.exe -noprofile -
+# File sharing helpers
+ function Enable-FPS {
+    netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes
+}
 
-# TODOs
-# runas /user:<localmachinename>\administrator cmd
-# psexec \\<localmachine> -u <localmachine>\Administrator -p <PASSWORD> /accepteula cmd /c "powershell -noninteractive -command gci c:\"
-# Get software remote computer
-# psexec \\<localmachine> -u <localmachine>\Administrator -p <PASSWORD> /accepteula cmd /c "powershell -noninteractive -command Get-WmiObject -Class Win32_Product"
+function Disable-FPS {
+    netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=No
+}
 
-# GUI
-# $Host.UI.RawUI.WindowTitle = "Elevated"
-# $Host.UI.RawUI.BackgroundColor = 'Black'
-# $Host.UI.RawUI.ForegroundColor = 'White'
-# $Host.PrivateData.ErrorForegroundColor = 'Red'
-# $Host.PrivateData.ErrorBackgroundColor = $bckgrnd
-# $Host.PrivateData.WarningForegroundColor = 'Magenta'
-# $Host.PrivateData.WarningBackgroundColor = $bckgrnd
-# $Host.PrivateData.DebugForegroundColor = 'Yellow'
-# $Host.PrivateData.DebugBackgroundColor = $bckgrnd
-# $Host.PrivateData.VerboseForegroundColor = 'Green'
-# $Host.PrivateData.VerboseBackgroundColor = $bckgrnd
-# $Host.PrivateData.ProgressForegroundColor = 'Cyan'
-# $Host.PrivateData.ProgressBackgroundColor = $bckgrnd
-# Clear-Host
-
-function Load-AD{
-    # https://technet.microsoft.com/en-us/library/ee617234.aspx
+# LAPS password finder
+function Get-Laps {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$ComputerObject
+    )
+    
     try {
-        if(Get-Module -list activedirectory){
-            if (Get-PSVersion){
-                Import-Module ActiveDirectory
-            }
-        } else {
-            Write-Host "Cannot Import Active Directory Module without RSAT Tools"
-        }
+        Get-ADComputer $ComputerObject -Properties ms-Mcs-AdmPwd | Select-Object name, ms-Mcs-AdmPwd
     } catch {
-        Write-Host "Cannot Import Active Directory Module"
+        return $false
     }
+}
+
+# Mailbox stats
+function Get-MailStats {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$UserObject
+    )
+    
+    try {
+        Get-MailboxFolderStatistics -Identity $UserObject | Select-Object identity,name,foldersize,FolderAndSubfolderSize,itemsinfolder | Export-Csv c:\temp\$UserObject.csv -NoTypeInformation
+    } catch {
+        return $false
+    }
+}
+
+# Formatted network stats
+# Example : Get-NetworkStatistics | Where-Object {$_.ProcessName -eq 'CiscoJabber'} | Format-Table
+function Get-NetworkStatistics
+{ 
+    $properties = 'Protocol','LocalAddress','LocalPort' 
+    $properties += 'RemoteAddress','RemotePort','State','ProcessName','PID'
+
+    netstat -ano | Select-String -Pattern '\s+(TCP|UDP)' | ForEach-Object {
+
+        $item = $_.line.split(" ",[System.StringSplitOptions]::RemoveEmptyEntries)
+
+        if($item[1] -notmatch '^\[::') 
+        {            
+            if (($la = $item[1] -as [ipaddress]).AddressFamily -eq 'InterNetworkV6') 
+            { 
+               $localAddress = $la.IPAddressToString 
+               $localPort = $item[1].split('\]:')[-1] 
+            } 
+            else 
+            { 
+                $localAddress = $item[1].split(':')[0] 
+                $localPort = $item[1].split(':')[-1] 
+            } 
+
+            if (($ra = $item[2] -as [ipaddress]).AddressFamily -eq 'InterNetworkV6') 
+            { 
+               $remoteAddress = $ra.IPAddressToString 
+               $remotePort = $item[2].split('\]:')[-1] 
+            } 
+            else 
+            { 
+               $remoteAddress = $item[2].split(':')[0] 
+               $remotePort = $item[2].split(':')[-1] 
+            } 
+
+            New-Object PSObject -Property @{ 
+                PID = $item[-1] 
+                ProcessName = (Get-Process -Id $item[-1] -ErrorAction SilentlyContinue).Name 
+                Protocol = $item[0] 
+                LocalAddress = $localAddress 
+                LocalPort = $localPort 
+                RemoteAddress =$remoteAddress 
+                RemotePort = $remotePort 
+                State = if($item[0] -eq 'tcp') {$item[3]} else {$null} 
+            } | Select-Object -Property $properties 
+        } 
+    } 
+}
+
+ # Wifi helpers
+function Get-WIFI($SSID) {
+    (netsh wlan show profiles)
 } 
+function Remove-WIFI($SSID) {
+   (netsh wlan delete profile name=$SSID)
+} 
+
+# Reload ps on-demand
+function Restart-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
+}
+
+# Reset offline files database
+function Reset-Offline {
+    Push-Location
+    Set-Location HKLM:
+    Set-ItemProperty ".\SYSTEM\CurrentControlSet\services\CSC\Parameters" -name "FormatDatabase" -Value 1 -PropertyType "DWord"
+    Pop-Location
+}
+
+# Reset windows search index
+function Reset-SearchIndex {
+    if (Test-Administrator) {
+        Stop-Service Wsearch
+        Start-Sleep -s 5
+        Get-ChildItem C:\ProgramData\Microsoft\Search\Data\Applications\Windows\
+        Rename-Item C:\ProgramData\Microsoft\Search\Data\Applications\Windows\Windows.edb Windows.edb.bak
+        Get-ChildItem C:\ProgramData\Microsoft\Search\Data\Applications\Windows\
+        Start-Sleep -s 5
+        Start-Service Wsearch
+        control /name Microsoft.IndexingOptions
+
+        #Alternate
+        #Push-Location
+        #Set-Location HKLM:
+        #Set-ItemProperty ".\SOFTWARE\Microsoft\Windows Search" -name "SetupCompletedSuccessfully" -Value 0 -PropertyType "DWord"
+        #Pop-Location
+
+    } else {
+        Write-Host "Must be elevated."
+    }
+}
+
+# Reset network stack
+function Reset-Stack {
+    if (Test-IsAdmin) {
+        ipconfig /flushdns
+        nbtstat -R
+        nbtstat -RR
+        netsh int ipv4 reset
+        netsh int ipv6 reset
+        netsh int ip reset
+        netsh int tcp reset
+        netsh winsock reset
+    } else {
+        Write-Host "Must be elevated."
+    }
+}
+
+ # Set power profile
+ function Set-Power {
+    # powercfg -L # to get the Available list of all Power Settings  schemes
+    # powercfg -GETACTIVESCHEME
+    #Existing Power Schemes (* Active)
+    #-----------------------------------
+    #Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)
+    #Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance) *
+    #Power Scheme GUID: a1841308-3541-4fab-bc81-f71556f20b4a  (Power saver)
+    $DesiredProfile = "Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)".Split()
+    $CurrentProfile = $(powercfg -GETACTIVESCHEME).Split()
+    if ($CurrentProfile[3] -ne $DesiredProfile[3]) {
+        powerCfg -SetActive $DesiredProfile[3]
+    }
+}
+
+# Setup openshh. Test this, make it smarter
+function Add-SSH {
+    # Test pipe
+    #Get-WindowsCapability -Online | ? Name -like 'OpenSSH*' | Add-WindowsCapability -Online
+    Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+
+    # Install the OpenSSH Client
+    Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+    # Install the OpenSSH Server
+    # Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+}
+
+<# Implicit Remoting
+Use tools without installing or modifying the local workstation by
+importing a session from a host that has them. Needs testing.
+#>
+function Get-ImplicitModule($endpoint, $module) {
+    $endpointsession=New-PSSession -ComputerName $endpoint
+    Import-PSSession -Session $endpointsession -Module $module
+}
+
+function Get-Ping
+{
+    param
+    (
+        # make parameter pipeline-aware
+        [Parameter(Mandatory,ValueFromPipeline)]
+        [string[]]
+        $ComputerName,
+        $TimeoutMillisec = 1000
+    )
+
+    begin
+    {
+        # use this to collect computer names that were sent via pipeline
+        [Collections.ArrayList]$bucket = @()
+    
+        # hash table with error code to text translation
+        $StatusCode_ReturnValue = 
+        @{
+            0='Success'
+            11001='Buffer Too Small'
+            11002='Destination Net Unreachable'
+            11003='Destination Host Unreachable'
+            11004='Destination Protocol Unreachable'
+            11005='Destination Port Unreachable'
+            11006='No Resources'
+            11007='Bad Option'
+            11008='Hardware Error'
+            11009='Packet Too Big'
+            11010='Request Timed Out'
+            11011='Bad Request'
+            11012='Bad Route'
+            11013='TimeToLive Expired Transit'
+            11014='TimeToLive Expired Reassembly'
+            11015='Parameter Problem'
+            11016='Source Quench'
+            11017='Option Too Big'
+            11018='Bad Destination'
+            11032='Negotiating IPSEC'
+            11050='General Failure'
+        }
+    
+    
+        # hash table with calculated property that translates
+        # numeric return value into friendly text
+        $statusFriendlyText = @{
+            # name of column
+            Name = 'Status'
+            # code to calculate content of column
+            Expression = { 
+                # take status code and use it as index into
+                # the hash table with friendly names
+                # make sure the key is of same data type (int)
+                if ($_.StatusCode -eq $null) {
+                    "Null StatusCode"
+                }
+                else {
+                    $StatusCode_ReturnValue[([int]$_.StatusCode)]
+                }
+            }
+        }
+
+        # Calculated property that returns $true when status -eq 0
+        $IsOnline = @{
+            Name = 'Online'
+            Expression = { $_.StatusCode -eq 0 }
+        }
+
+        # do DNS resolution when system responds to ping
+        $DNSName = @{
+            Name = 'DNSName'
+            Expression = { if ($_.StatusCode -eq 0) { 
+                    if ($_.Address -like '*.*.*.*') 
+                    { [Net.DNS]::GetHostByAddress($_.Address).HostName  } 
+                    else  
+                    { [Net.DNS]::GetHostByName($_.Address).HostName  } 
+                }
+            }
+        }
+    }
+    
+    process
+    {
+        # add each computer name to the bucket
+        # we either receive a string array via parameter, or 
+        # the process block runs multiple times when computer
+        # names are piped
+        $ComputerName | ForEach-Object {
+            $null = $bucket.Add($_)
+        }
+    }
+    
+    end
+    {
+        # convert list of computers into a WMI query string
+        $query = $bucket -join "' or Address='"
+        
+        Get-WmiObject -Class Win32_PingStatus -Filter "(Address='$query') and timeout=$TimeoutMillisec" |
+        Select-Object -Property Address, $IsOnline, $DNSName, $statusFriendlyText
+    }
+}
+
+<# Bootstrap #>
+function Set-Bootstrap{
+    #Windows Registry Editor Version 5.00
+    #
+    #[HKEY_CURRENT_USER\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+    #"ShowSecondsInSystemClock"=dword:00000001
+    Push-Location
+    Set-Location HKCU:
+    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -name "ShowSecondsInSystemClock" -Value 1 -PropertyType "DWord"
+    Set-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -name "ShowSecondsInSystemClock" -Value 1
+    Pop-Location
+
+    #Windows Registry Editor Version 5.00
+    #
+    #[HKEY_CURRENT_USER\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+    #"ShowSecondsInSystemClock"=dword:00000001
+    Push-Location
+    Set-Location HKLM:
+    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer" -name "drivelettersfirst" -Value 1 -PropertyType "DWord"
+    Set-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer" -name "drivelettersfirst" -Value 1
+    Pop-Location
+}
 
 function Test-DA {
     Write-Host "----------------------------------"
@@ -104,3 +372,21 @@ function Test-DA {
     # Check current Windows Security Associations (while successfully connected to Direct Access).
     # Windows Firewall Advance Security Main Mode Monitoring > Security Associations or use use "netsh advfirewall monitor show mmsa"
 }
+
+<#
+function Load-AD{
+    # https://technet.microsoft.com/en-us/library/ee617234.aspx
+    try {
+        if(Get-Module -list activedirectory){
+            if (Get-PSVersion){
+                Import-Module ActiveDirectory
+            }
+        } else {
+            Write-Host "Cannot Import Active Directory Module without RSAT Tools"
+        }
+    } catch {
+        Write-Host "Cannot Import Active Directory Module"
+    }
+} 
+
+#>
