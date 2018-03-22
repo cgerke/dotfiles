@@ -1,5 +1,11 @@
 <# these should be modules dude, write em! #>
 
+function Reset-Google {
+    If (Test-Path 'HKCU:\Software\Policies\Google') {
+        sudo Remove-Item -Path "HKCU:\Software\Policies\Google" -Confirm
+    }
+}
+
 # File sharing helpers
  function Enable-FPS {
     netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes
