@@ -396,3 +396,20 @@ function Load-AD{
 } 
 
 #>
+
+Function Set-FileTime
+{
+    Param (
+        [Parameter(mandatory=$true)]
+        [string[]]$path,
+        [Parameter(mandatory=$true)]
+        [datetime]$date = (Get-Date)
+    )
+
+    Get-ChildItem -Path $path |
+
+    ForEach-Object {
+        $_.CreationTime = $date
+        $_.LastWriteTime = $date
+    }
+}
