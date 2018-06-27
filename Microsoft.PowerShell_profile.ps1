@@ -132,6 +132,11 @@ function Get-ADMemberCSV {
     }
 }
 
+# Support helpers
+function Get-Remote {
+    Start-Process C:\Windows\CmRcViewer.exe
+}
+
 <# HUD #>
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
 Write-Host "Profile : " $profile
