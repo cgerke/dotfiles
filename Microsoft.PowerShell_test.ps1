@@ -194,18 +194,6 @@ function Reset-Stack {
     }
 }
 
-# Setup openshh. Test this, make it smarter
-function Add-SSH {
-    # Test pipe
-    #Get-WindowsCapability -Online | ? Name -like 'OpenSSH*' | Add-WindowsCapability -Online
-    Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
-
-    # Install the OpenSSH Client
-    Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
-
-    # Install the OpenSSH Server
-    # Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-}
 
 <# Implicit Remoting
 Use tools without installing or modifying the local workstation by
