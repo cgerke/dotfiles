@@ -53,20 +53,6 @@ function Disable-FPS {
     netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=No
 }
 
-# LAPS password finder
-function Get-Laps {
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$ComputerObject
-    )
-    
-    try {
-        Get-ADComputer $ComputerObject -Properties ms-Mcs-AdmPwd | Select-Object name, ms-Mcs-AdmPwd
-    } catch {
-        return $false
-    }
-}
-
 # Mailbox stats
 function Get-MailStats {
     param (
