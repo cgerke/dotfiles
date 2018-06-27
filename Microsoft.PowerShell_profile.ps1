@@ -71,7 +71,7 @@ function Test-RegistryValue {
 
 <# dot source #>
 Push-Location (Split-Path -parent $profile)
-"aliases","organisation","test" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
+"aliases","organisation" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
     Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; #Write-Host Microsoft.PowerShell_$_.ps1
 }
 Pop-Location
