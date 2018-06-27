@@ -93,6 +93,30 @@ if($Modules -ne $null) {
     Set-PSReadlineOption -EditMode Emacs
 }
 
+# LAPS
+function Get-AdmPwd {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$ComputerObject
+    )
+    
+    try {
+        Get-ADComputer $ComputerObject -Properties ms-Mcs-AdmPwd | Select-Object name, ms-Mcs-AdmPwd
+    } catch {
+        return $false
+    }
+}
+
+function Get-AdmPwdExpiry{
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$ComputerName
+    )
+
+    $PwdExp = Get-ADComputer $ComputerName -Properties ms-MCS-AdmPwdExpirationTime
+    $([datetime]::FromFileTime([convert]::ToInt64($PwdExp.'ms-MCS-AdmPwdExpirationTime',10)))
+}
+
 <# HUD #>
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
 Write-Host "Profile : " $profile
