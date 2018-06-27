@@ -93,7 +93,7 @@ if($Modules -ne $null) {
     Set-PSReadlineOption -EditMode Emacs
 }
 
-# LAPS
+# LAPS helpers
 function Get-AdmPwd {
     param (
         [parameter(Mandatory=$true)]
@@ -115,6 +115,21 @@ function Get-AdmPwdExpiry{
 
     $PwdExp = Get-ADComputer $ComputerName -Properties ms-MCS-AdmPwdExpirationTime
     $([datetime]::FromFileTime([convert]::ToInt64($PwdExp.'ms-MCS-AdmPwdExpirationTime',10)))
+}
+
+# AD helpers
+function Get-ADMemberCSV {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$GroupObject
+    )
+    
+    try {
+        Get-ADGroupMember "$GroupObject" | Export-CSV -path "c:\temp\$GroupObject.csv"
+        explorer c:\temp
+    } catch {
+        return $false
+    }
 }
 
 <# HUD #>
