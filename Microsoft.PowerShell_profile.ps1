@@ -137,6 +137,11 @@ function Get-Remote {
     Start-Process C:\Windows\CmRcViewer.exe
 }
 
+# SUDO
+function Get-Sudo {
+    Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs
+}
+
 <# HUD #>
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
 Write-Host "Profile : " $profile
