@@ -142,6 +142,36 @@ function Get-Sudo {
     Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs
 }
 
+# Bootstrap
+function Set-BootStrap {
+    Set-BootstrapOrg
+    
+    # SSH
+    # Test pipe
+    Get-WindowsCapability -Online | ? Name -like 'OpenSSH.Client*' | Add-WindowsCapability -Online
+    # Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+
+    # Install the OpenSSH Client
+    #Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+    # Install the OpenSSH Server
+    # Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+    
+    # Set IE
+    Set-Location HKCU:
+    New-Item -Path ".\Software\Microsoft\Internet Explorer" -Name "ContinuousBrowsing"
+    New-ItemProperty ".\Software\Microsoft\Internet Explorer\ContinuousBrowsing" -Name "Enabled" -Value 1 -PropertyType "DWord"
+    Set-ItemProperty ".\Software\Microsoft\Internet Explorer\ContinuousBrowsing" -Name "Enabled" -Value 1
+
+    # Set Run
+    Set-Location HKCU:
+    Remove-Item '.\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU'
+    New-Item -Path ".\Software\Microsoft\Windows\CurrentVersion\Explorer\" -Name "RunMRU"
+    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "MRUList" -Value "ab" -PropertyType "String"
+    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "a" -Value "powershell.exe -executionpolicy remotesigned\1" -PropertyType "String"
+    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "b" -Value "powershell.exe -executionpolicy bypass -command ""start-process powershell -ArgumentList '-ExecutionPolicy Bypass' -Verb Runas""\1" -PropertyType "String"    
+}
+
 <# HUD #>
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
 Write-Host "Profile : " $profile
