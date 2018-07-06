@@ -142,6 +142,12 @@ function Get-Sudo {
     Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs
 }
 
+# Non-policy account
+function Get-NonPolicy {
+    $thisDomain = (Get-WmiObject Win32_ComputerSystem).Domain
+    runas /user:$thisDomain\cgerke "powershell.exe -executionpolicy bypass"
+}
+
 # Bootstrap
 function Set-BootStrap {
     Set-BootstrapOrg
