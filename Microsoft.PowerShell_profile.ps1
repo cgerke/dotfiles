@@ -1,3 +1,4 @@
+
 <# Preferences #>
 $DebugPreference = "SilentlyContinue" # https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables
 [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls" # Support TLS
@@ -24,6 +25,14 @@ function Set-EnvPath([string] $path ) {
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
 <# End Profile Helpers #>
+
+<# . Source #> 
+Push-Location (Split-Path -parent $profile)
+"organisation" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
+    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; Write-Host Microsoft.PowerShell_$_.ps1
+}
+Pop-Location
+<# End . Source #>
 
 <# Support Helpers #>
 function Get-LAPS {
@@ -151,13 +160,6 @@ if($Modules -ne $null) {
     Set-PSReadlineOption -EditMode Emacs
 } #>
 
-# . Source 
-<# Push-Location (Split-Path -parent $profile)
-"test" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
-    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; Write-Host Microsoft.PowerShell_$_.ps1
-}
-Pop-Location #>
-
 <#  # Test auto loading modules
 function Test-PSVersion {
     if (Test-Path variable:psversiontable) {
@@ -167,6 +169,62 @@ function Test-PSVersion {
         Write-Output "Auto loading modules won't be available."
         return $false
     }
+} #>
+
+<# Download GIT
+function Get-GitCurrentRelease() {
+    [cmdletbinding()]
+    Param(
+        [ValidateNotNullorEmpty()]
+        [string]$Uri = "https://api.github.com/repos/git-for-windows/git/releases/latest"
+    )
+    
+    Begin {
+        Write-Verbose "[BEGIN  ] Starting: $($MyInvocation.Mycommand)"  
+    
+    } #begin
+    
+    Process {
+        Write-Verbose "[PROCESS] Getting current release information from $uri"
+        $data = Invoke-Restmethod -uri $uri -Method Get
+    
+        
+        if ($data.tag_name) {
+            [pscustomobject]@{
+                Name = $data.name
+                Version = $data.tag_name
+                Released = $($data.published_at -as [datetime])
+            }
+        } 
+    } #process
+ 
+    End {
+        Write-Verbose "[END    ] Ending: $($MyInvocation.Mycommand)"
+    } #end
+    
+    # Download the latest 64bit version of Git for Windows
+    $uri = 'http://git-scm.com/download/win'
+    #path to store the downloaded file
+    $path = $env:temp
+    
+    # get the web page
+    $page = Invoke-WebRequest -Uri $uri -UseBasicParsing
+    
+    #get the download link
+    $dl = ($page.links | where outerhtml -match 'git-.*-64-bit.exe' | select -first 1 * ).href
+    
+    #split out the filename
+    $filename = split-path $dl -leaf
+    
+    #construct a filepath for the download
+    $out = Join-Path -Path $path -ChildPath $filename
+    
+    #download the file
+    Invoke-WebRequest -uri $dl -OutFile $out -UseBasicParsing
+    
+    #check it out
+    Get-item $out
+ 
 } #>
 
 <# MOVE TO HELPERS #>
@@ -191,72 +249,6 @@ function Get-ADMemberCSV {
     }
 }
 
-function Get-Git {
-    
-    # Download the latest 64bit version of Git for Windows
-    $uri = 'http://git-scm.com/download/win'
-    #path to store the downloaded file
-    $path = $env:temp
-    
-    # get the web page
-    $page = Invoke-WebRequest -Uri $uri -UseBasicParsing 
-    
-    #get the download link
-    $dl = ($page.links | where outerhtml -match 'git-.*-64-bit.exe' | select -first 1 * ).href
-    
-    #split out the filename
-    $filename = split-path $dl -leaf
-    
-    #construct a filepath for the download
-    $out = Join-Path -Path $path -ChildPath $filename
-    
-    #download the file
-    Invoke-WebRequest -uri $dl -OutFile $out -UseBasicParsing
-    
-    #check it out
-    Get-item $out
-    Start-Process -FilePath $out -ArgumentList "/SILENT" -Verb RunAs
-}
-
-function Get-GitCurrentRelease {
-    [cmdletbinding()]
-    Param(
-        [ValidateNotNullorEmpty()]
-        [string]$Uri = "https://api.github.com/repos/git-for-windows/git/releases/latest"
-    )
-    
-    Begin {
-        Write-Verbose "[BEGIN  ] Starting: $($MyInvocation.Mycommand)"  
-    
-    } #begin
-    
-    Process {
-        Write-Verbose "[PROCESS] Getting current release information from $uri"
-        $data = Invoke-Restmethod -uri $uri -Method Get
-    
-        
-        if ($data.tag_name) {
-        [pscustomobject]@{
-            Name = $data.name
-            Version = $data.tag_name
-            Released = $($data.published_at -as [datetime])
-        }
-    } 
-    } #process
- 
-    End {
-        Write-Verbose "[END    ] Ending: $($MyInvocation.Mycommand)"
-    } #end
- 
-}
-
-# Report file/path length issues
-
-
-
-
-
-# Test reg values
 function Test-RegistryValue {
     param (
         [parameter(Mandatory=$true)]
@@ -273,14 +265,9 @@ function Test-RegistryValue {
     }
 }
 
-
-
-
-# Support helpers
 function Get-Remote {
     Start-Process C:\Windows\CmRcViewer.exe
 }
-
 
 function Get-Uptime {
     (Get-Date)-(Get-CimInstance Win32_OperatingSystem).lastbootuptime | Format-Table
@@ -315,3 +302,74 @@ function Set-BootStrap {
     New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "a" -Value "powershell.exe -executionpolicy remotesigned\1" -PropertyType "String"
     New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "b" -Value "powershell.exe -executionpolicy bypass -command ""start-process powershell -ArgumentList '-ExecutionPolicy Bypass' -Verb Runas""\1" -PropertyType "String"    
 }
+
+
+# Reminders
+function Get-evtx {
+    wevtutil epl application c:\temp\application.evtx
+}
+
+function Get_Health {
+    DISM /Online /Cleanup-Image /CheckHealth
+    DISM /Online /Cleanup-Image /ScanHealth
+    DISM /Online /Cleanup-Image /RestoreHealth
+}
+
+function Get-MSIProdCode {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$MSIName
+    )
+    
+    try {
+        if ( $MSIName = "All" ) {
+            get-wmiobject Win32_Product | Format-Table IdentifyingNumber, Name
+        } else {
+            get-wmiobject Win32_Product | Where-Object {$_.Name -Like "*$MSIName*"}
+        }
+        
+    } catch {
+        return $false
+    }
+}
+
+# Documentation
+function Get-Documentation {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$DocName
+    )
+    
+    try {
+        Import-Csv "$PSDIR\$DocName.csv" | Format-Table
+    } catch {
+        Write-Host "No such document."
+        return $false
+    }
+    
+}
+
+function Set-Documentation {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$DocName
+    )
+    
+    try {
+        explorer "$PSDIR\$DocName.csv"
+    } catch {
+        Write-Host "No such document."
+        return $false
+    }
+    
+}
+
+function Get-Log {
+    try {
+        notepad "$PSDIR\log.txt"
+    } catch {
+        return $false
+    }
+    
+}
+
