@@ -1,27 +1,102 @@
 <# Preferences #>
-$DebugPreference = "SilentlyContinue"
+$DebugPreference = "SilentlyContinue" # https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables
+[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls" # Support TLS
 
-<# Aliases / 1liners #>
+<# Alias / 1-Liner #>
 ${function:~} = { Set-Location ~ }
 ${function:Set-ParentLocation} = { Set-Location .. }; Set-Alias ".." Set-ParentLocation
+${function:Reload-Powershell} = { & $profile }
 ${function:Get-Sudo} = { Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs }
 
 <# PATH #>
 function Set-EnvPath([string] $path ) {
     if ( -not [string]::IsNullOrEmpty($path) ) {
-       if ( (Test-Path $path) -and (-not $env:PATH.contains($path)) ) {
-           Write-Host "Updating PATH" $path -ForegroundColor Cyan
-          $env:PATH += ';' + "$path"
+        if ( (Test-Path $path) -and (-not $env:PATH.contains($path)) ) {
+            #Write-Host "PATH" $path -ForegroundColor Cyan
+            $env:PATH += ';' + "$path"
        }
     }
  }
+
+<# Profile Helpers #>
+ function Test-IsAdmin {
+    $user = [Security.Principal.WindowsIdentity]::GetCurrent();
+    (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+}
+<# End Profile Helpers #>
+
+<# Support Helpers #>
+function Get-LAPS {
+    <#
+    .SYNOPSIS
+    https://technet.microsoft.com/en-us/mt227395.aspx
+    .DESCRIPTION
+    Query Active Directory for the local administrator password of a ComputerObj.
+    .EXAMPLE
+    Get-LAPS -ComputerObj mycomputer-1
+    .PARAMETER ComputerObj
+    The computer name to query. Just one.
+    #>
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]$ComputerObj
+    )
+    
+    try {
+        Get-ADComputer $ComputerObj -Properties ms-Mcs-AdmPwd | Select-Object name, ms-Mcs-AdmPwd
+    } catch {
+        return $false
+    }
+}; Set-Alias laps Get-LAPS
+
+function Get-LAPSExpiry{
+    <#
+    .SYNOPSIS
+    https://technet.microsoft.com/en-us/mt227395.aspx
+    .DESCRIPTION
+    Query Active Directory for the local administrator password expiry date for a ComputerObj.
+    .EXAMPLE
+    Get-LAPSExpiry -ComputerObj mycomputer-1
+    .PARAMETER ComputerObj
+    The computer name to query. Just one.
+    #>
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$ComputerObj
+    )
+
+    $PwdExp = Get-ADComputer $ComputerObj -Properties ms-MCS-AdmPwdExpirationTime
+    $([datetime]::FromFileTime([convert]::ToInt64($PwdExp.'ms-MCS-AdmPwdExpirationTime',10)))
+}
+
+function Get-PowershellAs {
+    <#
+    .SYNOPSIS
+    Run a powershell process as a specified user.
+    .DESCRIPTION
+    Run a powershell process as a specified user, typically an AD non-policy or elevated permissions account.
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser
+    .PARAMETER UserObj
+    The user name to "run as"
+    #>
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]$UserObj
+    )
+    $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
+    if ( $DomainObj -eq 'WORKGROUP' ){
+        $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
+    }
+    runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy bypass"
+}; Set-Alias pa Get-PowershellAs
+<# End Support Helpers #>
 
 <# Prompt #>
 function prompt {
     # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
     $origLastExitCode = $LastExitCode
-    Write-Host "Profile : $profile"
-    Write-Host "Execution Policy: " (Get-ExecutionPolicy)
+    Write-Host "Profile : $profile :"(Get-ExecutionPolicy)
 
     if (Get-GitStatus){
         if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
@@ -33,17 +108,21 @@ function prompt {
     if (Test-IsAdmin) {  # if elevated
         Write-Host "(Elevated $env:USERNAME ) " -NoNewline -ForegroundColor Red
     } else {
-        Write-Host "$env:USERNAME " -NoNewline
+        Write-Host "$env:USERNAME " -NoNewline -ForegroundColor Blue
     }
 
-    Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor Magenta
-    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Yellow -NoNewline
+    Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor DarkCyan
+    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Cyan -NoNewline
     Write-VcsStatus
     $LASTEXITCODE = $origLastExitCode
     "`n`n$('PS>' * ($nestedPromptLevel + 1)) "
 }
 
 <# Notes #>
+
+# Build a better function
+# https://technet.microsoft.com/en-us/library/hh360993.aspx?f=255&MSPPError=-2147217396
+
 # Research ways of using execution policy
 # Set-ExecutionPolicy RemoteSigned -scope CurrentUser
 
@@ -79,21 +158,7 @@ if($Modules -ne $null) {
 }
 Pop-Location #>
 
-<# MOVE TO MODULES #>
-# Report file/path length issues
-function Get-FilePathLength($path) {
-    (Get-Childitem -LiteralPath $path -Recurse) | 
-    Where-Object {$_.FullName.length -ge 248 } |
-    Format-Table -Wrap @{Label='Path length';Expression={$_.FullName.length}}, FullName
- }
-
-# Test elevation
-function Test-IsAdmin {
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent();
-    (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-}
-
- # Test auto loading modules
+<#  # Test auto loading modules
 function Test-PSVersion {
     if (Test-Path variable:psversiontable) {
         Write-Output "Auto loading modules will be available."
@@ -102,7 +167,94 @@ function Test-PSVersion {
         Write-Output "Auto loading modules won't be available."
         return $false
     }
+} #>
+
+<# MOVE TO HELPERS #>
+
+function Get-FilePathLength($path) {
+    (Get-Childitem -LiteralPath $path -Recurse) | 
+    Where-Object {$_.FullName.length -ge 248 } |
+    Format-Table -Wrap @{Label='Path length';Expression={$_.FullName.length}}, FullName
+ }
+# AD helpers
+function Get-ADMemberCSV {
+    param (
+        [parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]$GroupObject
+    )
+    
+    try {
+        Get-ADGroupMember "$GroupObject" | Export-CSV -path "c:\temp\$GroupObject.csv"
+        explorer c:\temp
+    } catch {
+        return $false
+    }
 }
+
+function Get-Git {
+    
+    # Download the latest 64bit version of Git for Windows
+    $uri = 'http://git-scm.com/download/win'
+    #path to store the downloaded file
+    $path = $env:temp
+    
+    # get the web page
+    $page = Invoke-WebRequest -Uri $uri -UseBasicParsing 
+    
+    #get the download link
+    $dl = ($page.links | where outerhtml -match 'git-.*-64-bit.exe' | select -first 1 * ).href
+    
+    #split out the filename
+    $filename = split-path $dl -leaf
+    
+    #construct a filepath for the download
+    $out = Join-Path -Path $path -ChildPath $filename
+    
+    #download the file
+    Invoke-WebRequest -uri $dl -OutFile $out -UseBasicParsing
+    
+    #check it out
+    Get-item $out
+    Start-Process -FilePath $out -ArgumentList "/SILENT" -Verb RunAs
+}
+
+function Get-GitCurrentRelease {
+    [cmdletbinding()]
+    Param(
+        [ValidateNotNullorEmpty()]
+        [string]$Uri = "https://api.github.com/repos/git-for-windows/git/releases/latest"
+    )
+    
+    Begin {
+        Write-Verbose "[BEGIN  ] Starting: $($MyInvocation.Mycommand)"  
+    
+    } #begin
+    
+    Process {
+        Write-Verbose "[PROCESS] Getting current release information from $uri"
+        $data = Invoke-Restmethod -uri $uri -Method Get
+    
+        
+        if ($data.tag_name) {
+        [pscustomobject]@{
+            Name = $data.name
+            Version = $data.tag_name
+            Released = $($data.published_at -as [datetime])
+        }
+    } 
+    } #process
+ 
+    End {
+        Write-Verbose "[END    ] Ending: $($MyInvocation.Mycommand)"
+    } #end
+ 
+}
+
+# Report file/path length issues
+
+
+
+
 
 # Test reg values
 function Test-RegistryValue {
@@ -121,59 +273,14 @@ function Test-RegistryValue {
     }
 }
 
-# LAPS helpers
-# Module this http://www.tomsitpro.com/articles/powershell-modules,2-846.html
-Set-Alias laps Get-LAPS
-function Get-LAPS {
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$ComputerObject
-    )
-    
-    try {
-        Get-ADComputer $ComputerObject -Properties ms-Mcs-AdmPwd | Select-Object name, ms-Mcs-AdmPwd
-    } catch {
-        return $false
-    }
-}
 
-function Get-LAPSExpiry{
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$ComputerName
-    )
 
-    $PwdExp = Get-ADComputer $ComputerName -Properties ms-MCS-AdmPwdExpirationTime
-    $([datetime]::FromFileTime([convert]::ToInt64($PwdExp.'ms-MCS-AdmPwdExpirationTime',10)))
-}
-
-# AD helpers
-function Get-ADMemberCSV {
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$GroupObject
-    )
-    
-    try {
-        Get-ADGroupMember "$GroupObject" | Export-CSV -path "c:\temp\$GroupObject.csv"
-        explorer c:\temp
-    } catch {
-        return $false
-    }
-}
 
 # Support helpers
 function Get-Remote {
     Start-Process C:\Windows\CmRcViewer.exe
 }
 
-
-
-# Non-policy account
-function Get-NonPolicy {
-    $thisDomain = (Get-WmiObject Win32_ComputerSystem).Domain
-    runas /user:$thisDomain\cgerke "powershell.exe -executionpolicy bypass"
-}
 
 function Get-Uptime {
     (Get-Date)-(Get-CimInstance Win32_OperatingSystem).lastbootuptime | Format-Table
