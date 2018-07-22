@@ -1,21 +1,26 @@
-# Preferences
+<# Preferences #>
 $DebugPreference = "SilentlyContinue"
+
+<# Aliases #>
+${function:~} = { Set-Location ~ }
+${function:Set-ParentLocation} = { Set-Location .. }; Set-Alias ".." Set-ParentLocation
+Set-Alias laps Get-LAPS
 
 <# Helpers #>
 
 # Log ALL THE THINGS! well some of them.
-Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+<# Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
     "PowerShell exited at {0}" -f (Get-Date) | 
         Out-File -FilePath "C:\temp\powershell.log" -Append
     Get-History | 
         Out-File -FilePath "C:\temp\powershell.log" -Append
-}
+} #>
 
 # Append paths to the env PATH
 function Set-EnvPath([string] $path ) {
     if ( -not [string]::IsNullOrEmpty($path) ) {
        if ( (Test-Path $path) -and (-not $env:PATH.contains($path)) ) {
-           Write-Host "Appending Path" $path -ForegroundColor Cyan
+           Write-Host "Updating PATH" $path -ForegroundColor Cyan
           $env:PATH += ';' + "$path"
        }
     }
@@ -69,16 +74,9 @@ function Test-RegistryValue {
     }
 }
 
-<# dot source #>
-Push-Location (Split-Path -parent $profile)
-"aliases","organisation" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
-    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; #Write-Host Microsoft.PowerShell_$_.ps1
-}
-Pop-Location
-
 <# Get Modules #>
-$ProfilePath = split-path -parent $PROFILE
-#$Modules = @("posh-git", "PSPath", "PSSudo")
+<# $ProfilePath = split-path -parent $PROFILE
+$Modules = @("posh-git", "PSPath", "PSSudo")
 if($Modules -ne $null) {
     foreach ($Module in $Modules) {
         if (!(Test-Path $ProfilePath\Modules\$Module)) {
@@ -91,7 +89,7 @@ if($Modules -ne $null) {
 
     # Maybe check its imported?
     Set-PSReadlineOption -EditMode Emacs
-}
+} #>
 
 # LAPS helpers
 function Get-AdmPwd {
@@ -107,7 +105,7 @@ function Get-AdmPwd {
     }
 }
 
-function Get-AdmPwdExpiry{
+function Get-LAPS{
     param (
         [parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]$ComputerName
@@ -148,6 +146,10 @@ function Get-NonPolicy {
     runas /user:$thisDomain\cgerke "powershell.exe -executionpolicy bypass"
 }
 
+function Get-Uptime {
+    (Get-Date)-(Get-CimInstance Win32_OperatingSystem).lastbootuptime | Format-Table
+}
+
 # Bootstrap
 function Set-BootStrap {
     Set-BootstrapOrg
@@ -178,9 +180,18 @@ function Set-BootStrap {
     New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "b" -Value "powershell.exe -executionpolicy bypass -command ""start-process powershell -ArgumentList '-ExecutionPolicy Bypass' -Verb Runas""\1" -PropertyType "String"    
 }
 
+<# . Source #>
+<# Push-Location (Split-Path -parent $profile)
+"test" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
+    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; Write-Host Microsoft.PowerShell_$_.ps1
+}
+Pop-Location #>
+
 <# HUD #>
+#Clear-Host
 Write-Host "Execution Policy: " (Get-ExecutionPolicy)
-Write-Host "Profile : " $profile
+Write-Host "Profile : $profile `n"
+Write-Host (git --version) -ForegroundColor Cyan
 
 # Prompt
 function prompt {
@@ -189,7 +200,6 @@ function prompt {
 
     if (Get-GitStatus){
         if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
-            Write-Host (git --version) -ForegroundColor Cyan
             Set-EnvPath((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
         }
     }
@@ -204,5 +214,6 @@ function prompt {
     Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Yellow -NoNewline
     Write-VcsStatus
     $LASTEXITCODE = $origLastExitCode
-    "`n$('PS>' * ($nestedPromptLevel + 1)) "
+    "`n`n$('PS>' * ($nestedPromptLevel + 1)) "
 }
+
