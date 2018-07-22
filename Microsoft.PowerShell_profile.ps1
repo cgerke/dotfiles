@@ -1,22 +1,12 @@
 <# Preferences #>
 $DebugPreference = "SilentlyContinue"
 
-<# Aliases #>
+<# Aliases / 1liners #>
 ${function:~} = { Set-Location ~ }
 ${function:Set-ParentLocation} = { Set-Location .. }; Set-Alias ".." Set-ParentLocation
-Set-Alias laps Get-LAPS
+${function:Get-Sudo} = { Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs }
 
-<# Helpers #>
-
-# Log ALL THE THINGS! well some of them.
-<# Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
-    "PowerShell exited at {0}" -f (Get-Date) | 
-        Out-File -FilePath "C:\temp\powershell.log" -Append
-    Get-History | 
-        Out-File -FilePath "C:\temp\powershell.log" -Append
-} #>
-
-# Append paths to the env PATH
+<# PATH #>
 function Set-EnvPath([string] $path ) {
     if ( -not [string]::IsNullOrEmpty($path) ) {
        if ( (Test-Path $path) -and (-not $env:PATH.contains($path)) ) {
@@ -26,24 +16,81 @@ function Set-EnvPath([string] $path ) {
     }
  }
 
- # Report file/path length issues
+<# Prompt #>
+function prompt {
+    # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
+    $origLastExitCode = $LastExitCode
+    Write-Host "Profile : $profile"
+    Write-Host "Execution Policy: " (Get-ExecutionPolicy)
+
+    if (Get-GitStatus){
+        if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
+            Set-EnvPath((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
+            Write-Host (git --version) -ForegroundColor Cyan
+        }
+    }
+
+    if (Test-IsAdmin) {  # if elevated
+        Write-Host "(Elevated $env:USERNAME ) " -NoNewline -ForegroundColor Red
+    } else {
+        Write-Host "$env:USERNAME " -NoNewline
+    }
+
+    Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor Magenta
+    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Yellow -NoNewline
+    Write-VcsStatus
+    $LASTEXITCODE = $origLastExitCode
+    "`n`n$('PS>' * ($nestedPromptLevel + 1)) "
+}
+
+<# Notes #>
+# Research ways of using execution policy
+# Set-ExecutionPolicy RemoteSigned -scope CurrentUser
+
+# Logging example
+<# Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+    "PowerShell exited at {0}" -f (Get-Date) | 
+        Out-File -FilePath "C:\temp\powershell.log" -Append
+    Get-History | 
+        Out-File -FilePath "C:\temp\powershell.log" -Append
+} #>
+
+# Importing modules
+<# $ProfilePath = split-path -parent $PROFILE
+$Modules = @("posh-git", "PSPath", "PSSudo")
+if($Modules -ne $null) {
+    foreach ($Module in $Modules) {
+        if (!(Test-Path $ProfilePath\Modules\$Module)) {
+            Write-Host "Installing module $Module"; PowerShellGet\Install-Module $Module -Scope CurrentUser
+        }
+        if (Get-Module -ListAvailable -Name $Module) {
+            Write-Host "Importing module $Module"; Import-Module $Module
+        }
+    }
+
+    # Maybe check its imported?
+    Set-PSReadlineOption -EditMode Emacs
+} #>
+
+# . Source 
+<# Push-Location (Split-Path -parent $profile)
+"test" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
+    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; Write-Host Microsoft.PowerShell_$_.ps1
+}
+Pop-Location #>
+
+<# MOVE TO MODULES #>
+# Report file/path length issues
 function Get-FilePathLength($path) {
     (Get-Childitem -LiteralPath $path -Recurse) | 
     Where-Object {$_.FullName.length -ge 248 } |
     Format-Table -Wrap @{Label='Path length';Expression={$_.FullName.length}}, FullName
  }
 
- # Test elevation
+# Test elevation
 function Test-IsAdmin {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent();
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-}
-
-# Test execution policy
-function Test-ExecutionPolicy {
-    if((Get-Executionpolicy) -eq 'RemoteSigned') {
-        Write-Host "Maybe relax with 'RemoteSigned' : Set-ExecutionPolicy RemoteSigned -scope CurrentUser"
-    }
 }
 
  # Test auto loading modules
@@ -74,25 +121,10 @@ function Test-RegistryValue {
     }
 }
 
-<# Get Modules #>
-<# $ProfilePath = split-path -parent $PROFILE
-$Modules = @("posh-git", "PSPath", "PSSudo")
-if($Modules -ne $null) {
-    foreach ($Module in $Modules) {
-        if (!(Test-Path $ProfilePath\Modules\$Module)) {
-            Write-Host "Installing module $Module"; PowerShellGet\Install-Module $Module -Scope CurrentUser
-        }
-        if (Get-Module -ListAvailable -Name $Module) {
-            Write-Host "Importing module $Module"; Import-Module $Module
-        }
-    }
-
-    # Maybe check its imported?
-    Set-PSReadlineOption -EditMode Emacs
-} #>
-
 # LAPS helpers
-function Get-AdmPwd {
+# Module this http://www.tomsitpro.com/articles/powershell-modules,2-846.html
+Set-Alias laps Get-LAPS
+function Get-LAPS {
     param (
         [parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]$ComputerObject
@@ -105,7 +137,7 @@ function Get-AdmPwd {
     }
 }
 
-function Get-LAPS{
+function Get-LAPSExpiry{
     param (
         [parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]$ComputerName
@@ -135,10 +167,7 @@ function Get-Remote {
     Start-Process C:\Windows\CmRcViewer.exe
 }
 
-# SUDO
-function Get-Sudo {
-    Start-Process powershell -ArgumentList "-executionpolicy bypass" -Verb RunAs
-}
+
 
 # Non-policy account
 function Get-NonPolicy {
@@ -179,41 +208,3 @@ function Set-BootStrap {
     New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "a" -Value "powershell.exe -executionpolicy remotesigned\1" -PropertyType "String"
     New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "b" -Value "powershell.exe -executionpolicy bypass -command ""start-process powershell -ArgumentList '-ExecutionPolicy Bypass' -Verb Runas""\1" -PropertyType "String"    
 }
-
-<# . Source #>
-<# Push-Location (Split-Path -parent $profile)
-"test" | Where-Object {Test-Path "Microsoft.PowerShell_$_.ps1"} | ForEach-Object -process {
-    Invoke-Expression ". .\Microsoft.PowerShell_$_.ps1"; Write-Host Microsoft.PowerShell_$_.ps1
-}
-Pop-Location #>
-
-<# HUD #>
-#Clear-Host
-Write-Host "Execution Policy: " (Get-ExecutionPolicy)
-Write-Host "Profile : $profile `n"
-Write-Host (git --version) -ForegroundColor Cyan
-
-# Prompt
-function prompt {
-    # https://github.com/dahlbyk/posh-git/wiki/Customizing-Your-PowerShell-Prompt
-    $origLastExitCode = $LastExitCode
-
-    if (Get-GitStatus){
-        if (Get-Command git -TotalCount 1 -ErrorAction SilentlyContinue) {
-            Set-EnvPath((Get-Item "Env:ProgramFiles").Value + "\Git\bin")
-        }
-    }
-
-    if (Test-IsAdmin) {  # if elevated
-        Write-Host "(Elevated $env:USERNAME ) " -NoNewline -ForegroundColor Red
-    } else {
-        Write-Host "$env:USERNAME " -NoNewline
-    }
-
-    Write-Host "$env:COMPUTERNAME " -NoNewline -ForegroundColor Magenta
-    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor Yellow -NoNewline
-    Write-VcsStatus
-    $LASTEXITCODE = $origLastExitCode
-    "`n`n$('PS>' * ($nestedPromptLevel + 1)) "
-}
-
