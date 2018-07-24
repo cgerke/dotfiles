@@ -127,7 +127,7 @@ function Set-Documentation {
 
 }; Set-Alias sd Set-Documentation
 
-function Get-FilePathLength() {
+function Get-FilePathLength {
     <#
     .SYNOPSIS
     Count file path characters.
@@ -241,6 +241,20 @@ function Get-PowershellAs {
     runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy bypass"
 }; Set-Alias pa Get-PowershellAs
 
+function Get-PowershellElevated {
+    <#
+    .SYNOPSIS
+    Run a powershell process elevated.
+    .DESCRIPTION
+    Run a powershell process as an elevated user..
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser
+    .PARAMETER UserObj
+    The user name to "run as"
+    #>
+    powershell.exe -executionpolicy bypass -command "start-process powershell -ArgumentList '-ExecutionPolicy Bypass'" -Verb Runas
+}
+
 function Get-PSExec {
     <#
     .SYNOPSIS
@@ -310,34 +324,13 @@ function prompt {
 # }
 
 
-<# MOVE TO HELPERS #>
+# SSH
+# Test pipe
+#Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*' | Add-WindowsCapability -Online
+# Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
 
-# Bootstrap
-function Set-BootStrap {
-    Set-BootstrapOrg
+# Install the OpenSSH Client
+#Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
 
-    # SSH
-    # Test pipe
-    Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*' | Add-WindowsCapability -Online
-    # Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
-
-    # Install the OpenSSH Client
-    #Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
-
-    # Install the OpenSSH Server
-    # Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-
-    # # Set IE
-    # Set-Location HKCU:
-    # New-Item -Path ".\Software\Microsoft\Internet Explorer" -Name "ContinuousBrowsing"
-    # New-ItemProperty ".\Software\Microsoft\Internet Explorer\ContinuousBrowsing" -Name "Enabled" -Value 1 -PropertyType "DWord"
-    # Set-ItemProperty ".\Software\Microsoft\Internet Explorer\ContinuousBrowsing" -Name "Enabled" -Value 1
-
-    # Set Run
-    Set-Location HKCU:
-    Remove-Item '.\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU'
-    New-Item -Path ".\Software\Microsoft\Windows\CurrentVersion\Explorer\" -Name "RunMRU"
-    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "MRUList" -Value "ab" -PropertyType "String"
-    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "a" -Value "powershell.exe -executionpolicy remotesigned\1" -PropertyType "String"
-    New-ItemProperty ".\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "b" -Value "powershell.exe -executionpolicy bypass -command ""start-process powershell -ArgumentList '-ExecutionPolicy Bypass' -Verb Runas""\1" -PropertyType "String"
-}
+# Install the OpenSSH Server
+# Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
