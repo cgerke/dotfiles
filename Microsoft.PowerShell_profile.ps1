@@ -255,7 +255,7 @@ function Get-PowershellElevated {
     powershell.exe -executionpolicy bypass -command "start-process powershell -ArgumentList '-ExecutionPolicy Bypass'" -Verb Runas
 }
 
-function Get-PSExec {
+function Get-PowershellAsSystem {
     <#
     .SYNOPSIS
     Just a reminder... PSexec locally as SYSTEM
