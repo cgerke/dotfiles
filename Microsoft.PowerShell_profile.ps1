@@ -213,27 +213,10 @@ function Get-MSIProdCode {
     .DESCRIPTION
     List all installed msi product codes.
     .EXAMPLE
-    Get-MSIProdCode -MSIObj All
-    .EXAMPLE
-    Get-MSIProdCode -MSIObj "Acrobat"
-    .PARAMETER MSIObj
-    The msi name to query. Just one.
+    Get-MSIProdCode
     #>
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$MSIObj
-    )
-
-    try {
-        if ( $MSIObj = "All" ) {
-            get-wmiobject Win32_Product | Format-Table IdentifyingNumber, Name
-        } else {
-            get-wmiobject Win32_Product | Where-Object {$_.Name -Like "*$MSIObj*"}
-        }
-
-    } catch {
-        return $false
-    }
+    get-wmiobject Win32_Product | Format-Table IdentifyingNumber, Name | Out-String -stream
+    Write-Host "`nFilter with (sls) : | Select-String 'STRING'`n"
 }
 
 function Get-PowershellAs {
