@@ -240,6 +240,18 @@ function Get-PowershellAs {
     }
     runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy bypass"
 }; Set-Alias pa Get-PowershellAs
+
+function Get-PSExec {
+    <#
+    .SYNOPSIS
+    Just a reminder... PSexec locally as SYSTEM
+    .DESCRIPTION
+    PSexec locally as SYSTEM for testing packages.
+    .EXAMPLE
+    Get-PSExec
+    #>
+    psexec -i -s powershell -executionpolicy RemoteSigned
+}
 <# End Support Helpers #>
 
 <# HUD #>
