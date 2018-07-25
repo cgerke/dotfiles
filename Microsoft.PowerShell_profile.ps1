@@ -221,6 +221,9 @@ function Get-PowershellAsSystem {
 <# Bootstrap #>
 function Get-Profile {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
 }
 <# End Bootstrap #>
 
