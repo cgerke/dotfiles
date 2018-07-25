@@ -224,7 +224,7 @@ function Get-PowershellAs {
     .SYNOPSIS
     Run a powershell process as a specified user.
     .DESCRIPTION
-    Run a powershell process as a specified user, typically an AD non-policy or elevated permissions account.
+    Run a powershell process as a specified user. Typically an AD non-policy account.
     .EXAMPLE
     Get-PowershellAs -UserObj myuser
     .PARAMETER UserObj
@@ -238,7 +238,7 @@ function Get-PowershellAs {
     if ( $DomainObj -eq 'WORKGROUP' ){
         $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
     }
-    runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy bypass"
+    runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy RemoteSigned"
 }; Set-Alias pa Get-PowershellAs
 
 function Get-PowershellElevated {
@@ -246,13 +246,13 @@ function Get-PowershellElevated {
     .SYNOPSIS
     Run a powershell process elevated.
     .DESCRIPTION
-    Run a powershell process as an elevated user..
+    Run a powershell process as an elevated session. Typcially the current user who is also a local admin.
     .EXAMPLE
     Get-PowershellAs -UserObj myuser
     .PARAMETER UserObj
     The user name to "run as"
     #>
-    powershell.exe -executionpolicy bypass -command "start-process powershell -ArgumentList '-ExecutionPolicy Bypass'" -Verb Runas
+    powershell.exe -NoProfile -NonInteractive -command "Start-Process powershell -ArgumentList '-ExecutionPolicy RemoteSigned'" -Verb Runas
 }
 
 function Get-PowershellAsSystem {
@@ -260,7 +260,7 @@ function Get-PowershellAsSystem {
     .SYNOPSIS
     Just a reminder... PSexec locally as SYSTEM
     .DESCRIPTION
-    PSexec locally as SYSTEM for testing packages.
+    PSexec locally as SYSTEM for testing packages. But maybe test https://github.com/mkellerman/Invoke-CommandAs
     .EXAMPLE
     Get-PSExec
     #>
