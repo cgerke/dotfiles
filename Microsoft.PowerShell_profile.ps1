@@ -23,7 +23,13 @@ function Set-EnvPath([string] $path ) {
  }
 
 <# Profile Helpers #>
- function Test-IsAdmin {
+function Restart-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
+}
+
+function Test-IsAdmin {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent();
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
