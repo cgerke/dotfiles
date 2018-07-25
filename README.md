@@ -8,7 +8,7 @@ curl -#L https://raw.githubusercontent.com/cgerke/dotfiles/master/.dotfiles | su
 ```
 
 ```posh
-git clone https://github.com/cgerke/dotfiles-windows.git; cd dotfiles-windows; . .\bootstrap.ps1
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
 ```
 
 #### Credits
