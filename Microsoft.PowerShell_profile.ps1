@@ -234,6 +234,15 @@ function Reset-Google {
         Write-Host "Elevation required."
     }
 }
+
+function Reset-OfflineFiles {
+    If ( Test-IsAdmin ) {
+        New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\services\CSC\Parameters"
+        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\services\CSC\Parameters" -name "FormatDatabase" -Value 1 -PropertyType "DWord"
+    } Else {
+        Write-Host "Elevation required."
+    }
+}
 <# End Support Helpers #>
 
 <# HUD #>
