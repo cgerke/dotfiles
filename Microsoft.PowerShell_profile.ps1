@@ -25,7 +25,6 @@ function Set-EnvPath([string] $path ) {
 <# Profile Helpers #>
 function Get-Profile {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
-    Restart-Powershell
 }
 
 function Restart-Powershell {
@@ -226,6 +225,14 @@ function Get-PowershellAsSystem {
     Get-PSExec
     #>
     psexec -i -s powershell.exe -executionpolicy RemoteSigned
+}
+
+function Reset-Google {
+    If ( Test-IsAdmin ) {
+        Remove-Item -Path "HKCU:\Software\Policies\Google" -Confirm
+    } Else {
+        Write-Host "Elevation required."
+    }
 }
 <# End Support Helpers #>
 
