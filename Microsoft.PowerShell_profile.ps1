@@ -321,3 +321,9 @@ function prompt {
 
 # Find the powershell way
 # msinfo32 /nfo C:\TEMP\SYSSUM.NFO /categories +systemsummary
+
+function Reset-Google {
+    If (Test-Path 'HKCU:\Software\Policies\Google') {
+        sudo Remove-Item -Path "HKCU:\Software\Policies\Google" -Confirm
+    }
+}
