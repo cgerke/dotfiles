@@ -218,6 +218,12 @@ function Get-PowershellAsSystem {
 }
 <# End Support Helpers #>
 
+<# Bootstrap #>
+function Get-Profile {
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
+}
+<# End Bootstrap #>
+
 <# HUD #>
 Write-Host "$profile"
 Write-Host (Get-ExecutionPolicy)
