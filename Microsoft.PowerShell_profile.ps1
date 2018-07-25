@@ -77,56 +77,6 @@ function Get-ADMemberCSV {
     }
 }
 
-function Get-Documentation {
-    <#
-    .SYNOPSIS
-    Quick access to edit documentation.
-    .DESCRIPTION
-    Lightweight documentation.
-    .EXAMPLE
-    Get-Documentation -DocObj printers
-    .PARAMETER DocObj
-    The document name. Just one.
-    #>
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$DocObj
-    )
-    try {
-        Import-Csv "$PSDirectory\$DocObj.csv" | Format-Table | Out-String -stream
-        Write-Host "`nFilter with (sls) : | Select-String 'STRING'`n"
-    } catch {
-        Write-Host "No such document."
-        return $false
-    }
-
-}; Set-Alias gd Get-Documentation
-
-function Set-Documentation {
-    <#
-    .SYNOPSIS
-    Quick access to edit documentation.
-    .DESCRIPTION
-    Lightweight documentation.
-    .EXAMPLE
-    Set-Documentation -DocObj printers
-    .PARAMETER DocObj
-    The document name. Just one.
-    #>
-    param (
-        [parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]$DocObj
-    )
-
-    try {
-        explorer "$PSDirectory\$DocObj.csv"
-    } catch {
-        Write-Host "No such document."
-        return $false
-    }
-
-}; Set-Alias sd Set-Documentation
-
 function Get-FilePathLength {
     <#
     .SYNOPSIS
@@ -264,7 +214,7 @@ function Get-PowershellAsSystem {
     .EXAMPLE
     Get-PSExec
     #>
-    psexec -i -s powershell -executionpolicy RemoteSigned
+    psexec -i -s powershell.exe -executionpolicy RemoteSigned
 }
 <# End Support Helpers #>
 
@@ -323,6 +273,30 @@ function prompt {
 #     (Get-Date)-(Get-CimInstance Win32_OperatingSystem).lastbootuptime | Format-Table
 # }
 
+# function Get-Documentation {
+#     <#
+#     .SYNOPSIS
+#     Quick access to edit documentation.
+#     .DESCRIPTION
+#     Lightweight documentation.
+#     .EXAMPLE
+#     Get-Documentation -DocObj printers
+#     .PARAMETER DocObj
+#     The document name. Just one.
+#     #>
+#     param (
+#         [parameter(Mandatory=$true)]
+#         [ValidateNotNullOrEmpty()]$DocObj
+#     )
+#     try {
+#         Import-Csv "$PSDirectory\$DocObj.txt" | Format-Table | Out-String -stream
+#         Write-Host "`nFilter with (sls) : | Select-String 'STRING'`n"
+#     } catch {
+#         Write-Host "No such document."
+#         return $false
+#     }
+
+# }; Set-Alias gd Get-Documentation
 
 # SSH
 # Test pipe
@@ -334,3 +308,6 @@ function prompt {
 
 # Install the OpenSSH Server
 # Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+# Find the powershell way
+# msinfo32 /nfo C:\TEMP\SYSSUM.NFO /categories +systemsummary
