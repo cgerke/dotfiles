@@ -19,7 +19,7 @@ sudo chmod -R 775 /opt/dotfiles
 sudo chown -R root:admin /opt/dotfiles
 
 cd
-for d in ".aliases" ".atom" ".bash_profile" ".bash_prompt" ".chef" ".dotfiles" ".exports" ".functions" ".gitconfig" ".gitignore_global" ".vimrc"
+for d in ".aliases" ".bash_profile" ".bash_prompt" ".chef" ".dotfiles" ".exports" ".functions" ".gitconfig" ".gitignore_global" ".vimrc"
 do
 	readlink ~/${d} | grep /opt/dotfiles/${d}
 	if [ $? != 0 ]; then
