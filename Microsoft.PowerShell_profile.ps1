@@ -23,6 +23,10 @@ function Set-EnvPath([string] $path ) {
  }
 
 <# Profile Helpers #>
+function Get-Profile {
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
+}
+
 function Restart-Powershell {
     $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
     [System.Diagnostics.Process]::Start($newProcess);
@@ -223,15 +227,6 @@ function Get-PowershellAsSystem {
     psexec -i -s powershell.exe -executionpolicy RemoteSigned
 }
 <# End Support Helpers #>
-
-<# Bootstrap #>
-function Get-Profile {
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
-    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-    [System.Diagnostics.Process]::Start($newProcess);
-    exit
-}
-<# End Bootstrap #>
 
 <# HUD #>
 Write-Host "$profile"
