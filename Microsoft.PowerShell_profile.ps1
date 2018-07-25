@@ -25,6 +25,7 @@ function Set-EnvPath([string] $path ) {
 <# Profile Helpers #>
 function Get-Profile {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
+    Restart-Powershell
 }
 
 function Restart-Powershell {
@@ -321,9 +322,3 @@ function prompt {
 
 # Find the powershell way
 # msinfo32 /nfo C:\TEMP\SYSSUM.NFO /categories +systemsummary
-
-function Reset-Google {
-    If (Test-Path 'HKCU:\Software\Policies\Google') {
-        sudo Remove-Item -Path "HKCU:\Software\Policies\Google" -Confirm
-    }
-}
