@@ -23,10 +23,21 @@ function Set-EnvPath([string] $path ) {
  }
 
 <# Profile Helpers #>
+function Get-Profile {
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
+}
+
+function Restart-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
+}
+
  function Test-IsAdmin {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent();
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
+
 function Test-RegistryValue {
     param (
         [parameter(Mandatory=$true)]
