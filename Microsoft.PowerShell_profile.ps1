@@ -162,8 +162,6 @@ function Import-Excel
   $excel.Quit()
 }
 
-
-
 function Get-FilePathLength {
     <#
     .SYNOPSIS
@@ -275,7 +273,7 @@ function Get-PowershellAs {
     if ( $DomainObj -eq 'WORKGROUP' ){
         $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
     }
-    runas /user:$DomainObj\$UserObj "powershell.exe -executionpolicy RemoteSigned"
+    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
 }; Set-Alias pa Get-PowershellAs
 
 function Get-PowershellElevated {
