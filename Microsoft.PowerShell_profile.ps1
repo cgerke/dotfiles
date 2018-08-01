@@ -23,17 +23,7 @@ function Set-EnvPath([string] $path ) {
  }
 
 <# Profile Helpers #>
-function Get-Profile {
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cgerke/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile "$profile"
-}
-
-function Restart-Powershell {
-    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-    [System.Diagnostics.Process]::Start($newProcess);
-    exit
-}
-
-function Test-IsAdmin {
+ function Test-IsAdmin {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent();
     (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
@@ -86,6 +76,82 @@ function Get-ADMemberCSV {
         return $false
     }
 }
+
+function Import-Excel
+{
+  param (
+    [string]$FileName,
+    [string]$WorksheetName,
+    [bool]$DisplayProgress = $true
+  )
+
+  if ($FileName -eq "") {
+    throw "Please provide path to the Excel file"
+    Exit
+  }
+
+  if (-not (Test-Path $FileName)) {
+    throw "Path '$FileName' does not exist."
+    exit
+  }
+
+  #$FileName = Resolve-Path $FileName
+  $excel = New-Object -com "Excel.Application"
+  $excel.Visible = $false
+  $workbook = $excel.workbooks.open($FileName)
+
+  if (-not $WorksheetName) {
+    Write-Warning "Defaulting to the first worksheet in workbook."
+    $sheet = $workbook.ActiveSheet
+  } else {
+    $sheet = $workbook.Sheets.Item($WorksheetName)
+  }
+  
+  if (-not $sheet)
+  {
+    throw "Unable to open worksheet $WorksheetName"
+    exit
+  }
+  
+  $sheetName = $sheet.Name
+  $columns = $sheet.UsedRange.Columns.Count
+  $lines = $sheet.UsedRange.Rows.Count
+  
+  Write-Warning "Worksheet $sheetName contains $columns columns and $lines lines of data"
+  
+  $fields = @()
+  
+  for ($column = 1; $column -le $columns; $column ++) {
+    $fieldName = $sheet.Cells.Item.Invoke(1, $column).Value2
+    if ($fieldName -eq $null) {
+      $fieldName = "Column" + $column.ToString()
+    }
+    $fields += $fieldName
+  }
+  
+  $line = 2
+  
+  for ($line = 2; $line -le $lines; $line ++) {
+    $values = New-Object object[] $columns
+    for ($column = 1; $column -le $columns; $column++) {
+      $values[$column - 1] = $sheet.Cells.Item.Invoke($line, $column).Value2
+    }  
+  
+    $row = New-Object psobject
+    $fields | foreach-object -begin {$i = 0} -process {
+      $row | Add-Member -MemberType noteproperty -Name $fields[$i] -Value $values[$i]; $i++
+    }
+    $row
+    $percents = [math]::round((($line/$lines) * 100), 0)
+    if ($DisplayProgress) {
+      Write-Progress -Activity:"Importing from Excel file $FileName" -Status:"Imported $line of total $lines lines ($percents%)" -PercentComplete:$percents
+    }
+  }
+  $workbook.Close()
+  $excel.Quit()
+}
+
+
 
 function Get-FilePathLength {
     <#
@@ -208,12 +274,20 @@ function Get-PowershellElevated {
     .DESCRIPTION
     Run a powershell process as an elevated session. Typcially the current user who is also a local admin.
     .EXAMPLE
-    Get-PowershellAs -UserObj myuser
+    Get-PowershellElevated -UserObj myuser
     .PARAMETER UserObj
-    The user name to "run as"
+    The user name to "run as" elevated
     #>
-    powershell.exe -NoProfile -NonInteractive -command "Start-Process powershell -ArgumentList '-ExecutionPolicy RemoteSigned'" -Verb Runas
-}
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]$UserObj
+    )
+    $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
+    if ( $DomainObj -eq 'WORKGROUP' ){
+        $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
+    }
+    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe -Verb runAs"
+}; Set-Alias pe Get-PowershellElevated
 
 function Get-PowershellAsSystem {
     <#
@@ -225,23 +299,6 @@ function Get-PowershellAsSystem {
     Get-PSExec
     #>
     psexec -i -s powershell.exe -executionpolicy RemoteSigned
-}
-
-function Reset-Google {
-    If ( Test-IsAdmin ) {
-        Remove-Item -Path "HKCU:\Software\Policies\Google" -Confirm
-    } Else {
-        Write-Host "Elevation required."
-    }
-}
-
-function Reset-OfflineFiles {
-    If ( Test-IsAdmin ) {
-        New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\services\CSC\Parameters"
-        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\services\CSC\Parameters" -name "FormatDatabase" -Value 1 -PropertyType "DWord"
-    } Else {
-        Write-Host "Elevation required."
-    }
 }
 <# End Support Helpers #>
 
