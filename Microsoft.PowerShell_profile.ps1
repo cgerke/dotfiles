@@ -305,9 +305,21 @@ function Get-PowershellAsSystem {
     .DESCRIPTION
     PSexec locally as SYSTEM for testing packages. But maybe test https://github.com/mkellerman/Invoke-CommandAs
     .EXAMPLE
-    Get-PSExec
+    Get-PowershellAsSystem
+    .EXAMPLE
+    Get-PowershellAsSystem -UserObj myuser
+    .PARAMETER UserObj
+    The user name to "run as" elevated
     #>
-    psexec -i -s powershell.exe -executionpolicy RemoteSigned
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]$UserObj
+    )
+    $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
+    if ( $DomainObj -eq 'WORKGROUP' ){
+        $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
+    }
+    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
 }
 <# End Support Helpers #>
 
