@@ -264,16 +264,22 @@ function Get-PowershellAs {
     Get-PowershellAs -UserObj myuser
     .EXAMPLE
     Get-PowershellAs -UserObj myuser -SystemObj
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser -SystemObj -ElevatedObj
     .PARAMETER UserObj
-    The user name to "run as"
+    The user name to "Run as"
     .PARAMETER SystemObj
-    Specifying to run as System NT.
+    Specify to run as System NT.
+    .PARAMETER ElevatedObj
+    Specify to run elevated (UAC).
     #>
     param (
-        [Parameter(Mandatory=$True, HelpMessage="Username goes here.")]
+        [Parameter(Mandatory=$True)]
         [ValidateNotNullOrEmpty()]$UserObj,
         [Parameter(Mandatory=$false)]
-        [Switch]$SystemObj
+        [Switch]$SystemObj,
+        [Parameter(Mandatory=$false)]
+        [Switch]$ElevatedObj
     )
 
     $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
@@ -281,34 +287,20 @@ function Get-PowershellAs {
         $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
     }
 
-    if($SystemObj -eq $false){
-        Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
-    } else {
+    if($SystemObj){
+        Write-Host "System NT"
         Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
+    } else {
+        Write-Host "Not System NT"
+        if($ElevatedObj){
+            Write-Host "Elevated"
+            Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe -Verb runAs"
+        } else {
+            Write-Host "Not elevated"
+            Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
+        }
     }
 }; Set-Alias pa Get-PowershellAs
-
-function Get-PowershellElevated {
-    <#
-    .SYNOPSIS
-    Run a powershell process elevated.
-    .DESCRIPTION
-    Run a powershell process as an elevated session. Typcially the current user who is also a local admin.
-    .EXAMPLE
-    Get-PowershellElevated -UserObj myuser
-    .PARAMETER UserObj
-    The user name to "run as" elevated
-    #>
-    param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]$UserObj
-    )
-    $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
-    if ( $DomainObj -eq 'WORKGROUP' ){
-        $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
-    }
-    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe -Verb runAs"
-}; Set-Alias pe Get-PowershellElevated
 <# End Support Helpers #>
 
 <# HUD #>
