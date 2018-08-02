@@ -261,17 +261,13 @@ function Get-PowershellAs {
     .DESCRIPTION
     Run a powershell process as a specified user. Typically an AD non-policy account.
     .EXAMPLE
-    Get-PowershellAs -UserObj myuser
-    .EXAMPLE
-    Get-PowershellAs -UserObj myuser -SystemObj
-    .EXAMPLE
     Get-PowershellAs -UserObj myuser -SystemObj -ElevatedObj
     .PARAMETER UserObj
-    The user name to "Run as"
+    Mandatory user name to "Run as"
     .PARAMETER SystemObj
-    Specify to run as System NT.
+    Optional parameter to run as System NT.
     .PARAMETER ElevatedObj
-    Specify to run elevated (UAC).
+    Optional parameter to run elevated (UAC).
     #>
     param (
         [Parameter(Mandatory=$True)]
@@ -288,18 +284,16 @@ function Get-PowershellAs {
     }
 
     if($SystemObj){
-        Write-Host "System NT"
-        Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
+        $arglist = "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
     } else {
-        Write-Host "Not System NT"
-        if($ElevatedObj){
-            Write-Host "Elevated"
-            Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe -Verb runAs"
-        } else {
-            Write-Host "Not elevated"
-            Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
-        }
+        $arglist = "Start-Process powershell.exe"
     }
+
+    if($ElevatedObj){
+        $arglist = $arglist + " -Verb runAs"
+    }
+
+    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList $arglist
 }; Set-Alias pa Get-PowershellAs
 <# End Support Helpers #>
 
