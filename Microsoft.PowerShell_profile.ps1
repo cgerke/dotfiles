@@ -257,23 +257,35 @@ function Get-MSIProdCode {
 function Get-PowershellAs {
     <#
     .SYNOPSIS
-    Run a powershell process as a specified user.
+    Run a powershell process as a specified user or as System NT
     .DESCRIPTION
     Run a powershell process as a specified user. Typically an AD non-policy account.
     .EXAMPLE
     Get-PowershellAs -UserObj myuser
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser -SystemObj
     .PARAMETER UserObj
     The user name to "run as"
+    .PARAMETER SystemObj
+    Specifying to run as System NT.
     #>
     param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]$UserObj
+        [Parameter(Mandatory=$True, HelpMessage="Username goes here.")]
+        [ValidateNotNullOrEmpty()]$UserObj,
+        [Parameter(Mandatory=$false)]
+        [Switch]$SystemObj
     )
+
     $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
     if ( $DomainObj -eq 'WORKGROUP' ){
         $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
     }
-    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
+
+    if($SystemObj -eq $false){
+        Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe"
+    } else {
+        Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
+    }
 }; Set-Alias pa Get-PowershellAs
 
 function Get-PowershellElevated {
@@ -297,30 +309,6 @@ function Get-PowershellElevated {
     }
     Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process powershell.exe -Verb runAs"
 }; Set-Alias pe Get-PowershellElevated
-
-function Get-PowershellAsSystem {
-    <#
-    .SYNOPSIS
-    Just a reminder... PSexec locally as SYSTEM
-    .DESCRIPTION
-    PSexec locally as SYSTEM for testing packages. But maybe test https://github.com/mkellerman/Invoke-CommandAs
-    .EXAMPLE
-    Get-PowershellAsSystem
-    .EXAMPLE
-    Get-PowershellAsSystem -UserObj myuser
-    .PARAMETER UserObj
-    The user name to "run as" elevated
-    #>
-    param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]$UserObj
-    )
-    $DomainObj = (Get-WmiObject Win32_ComputerSystem).Domain
-    if ( $DomainObj -eq 'WORKGROUP' ){
-        $DomainObj = (Get-WmiObject Win32_ComputerSystem).Name
-    }
-    Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
-}
 <# End Support Helpers #>
 
 <# HUD #>
