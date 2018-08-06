@@ -259,13 +259,17 @@ function Get-PowershellAs {
     .SYNOPSIS
     Run a powershell process as a specified user or as System NT
     .DESCRIPTION
-    Run a powershell process as a specified user. Typically an AD non-policy account.
+    Run a powershell process as a specified user, a specific user elevated, or SYSTEM NT.
     .EXAMPLE
-    Get-PowershellAs -UserObj myuser -SystemObj -ElevatedObj
+    Get-PowershellAs -UserObj myuser
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser -ElevatedObj
+    .EXAMPLE
+    Get-PowershellAs -UserObj myuser -SystemObj
     .PARAMETER UserObj
     Mandatory user name to "Run as"
     .PARAMETER SystemObj
-    Optional parameter to run as System NT.
+    Optional parameter to run as System NT. Requires PSEXEC
     .PARAMETER ElevatedObj
     Optional parameter to run elevated (UAC).
     #>
@@ -287,10 +291,9 @@ function Get-PowershellAs {
         $arglist = "Start-Process psexec -ArgumentList '-i -s powershell.exe -executionpolicy RemoteSigned' -Verb runAs"
     } else {
         $arglist = "Start-Process powershell.exe"
-    }
-
-    if($ElevatedObj){
-        $arglist = $arglist + " -Verb runAs"
+        if($ElevatedObj){
+            $arglist = $arglist + " -Verb runAs"
+        }
     }
 
     Start-Process powershell.exe -Credential "$DomainObj\$UserObj" -NoNewWindow -ArgumentList $arglist
