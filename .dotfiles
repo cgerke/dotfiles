@@ -14,7 +14,7 @@ if [ -d /opt/dotfiles ]; then
 	git remote set-url origin git@github.com:cgerke/dotfiles.git  
 else
 	sudo git clone https://github.com/cgerke/dotfiles /opt/dotfiles
-    pushd /opt/dotfiles
+	pushd /opt/dotfiles
 	git remote set-url origin git@github.com:cgerke/dotfiles.git 
 fi
 
