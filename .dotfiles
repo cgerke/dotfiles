@@ -41,6 +41,7 @@ do
 	fi
 done
 
+ln -s ~/Documents/.ssh ~/.ssh
 for s in $(ls /opt/dotfiles/.ssh)
 do
 	readlink ~/.ssh/${s} | grep /opt/dotfiles/.ssh/${s}
