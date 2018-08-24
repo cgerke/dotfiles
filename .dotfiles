@@ -15,6 +15,7 @@ else
 	sudo git clone https://github.com/cgerke/dotfiles /opt/dotfiles
 fi
 
+sudo chflags hidden /opt
 sudo chmod -R 775 /opt/dotfiles
 sudo chown -R root:admin /opt/dotfiles
 
