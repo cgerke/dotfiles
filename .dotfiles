@@ -20,7 +20,8 @@ fi
 
 sudo chflags hidden /opt
 sudo chmod -R 775 /opt/dotfiles
-sudo chown -R root:admin /opt/dotfiles
+sudo chown -R $USER:staff /opt/dotfiles
+sudo chmod -R 700 /opt/dotfiles/.ssh
 
 cd
 for d in ".aliases" ".bash_profile" ".bash_prompt" ".chef" ".dotfiles" ".exports" ".functions" ".gitconfig" ".gitignore_global" ".gitmessage" ".vimrc"
