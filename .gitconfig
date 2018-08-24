@@ -45,5 +45,8 @@
 	excludesfile = ~/.gitignore_global
 [commit]
 	template = ~/.gitmessage
-[credential]
-	helper = osxkeychain
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
