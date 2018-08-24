@@ -45,3 +45,5 @@
 	excludesfile = ~/.gitignore_global
 [commit]
 	template = ~/.gitmessage
+[credential]
+	helper = osxkeychain
